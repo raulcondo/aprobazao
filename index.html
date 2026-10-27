@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="es" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APROBAZAO - Expendedora IoT de Componentes Electrónicos con NFC</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0b0f19',
+                            card: '#151c2e',
+                            border: '#2a3652',
+                            neonPink: '#ff2a85',
+                            neonCyan: '#00f0ff',
+                            neonPurple: '#9d4edd',
+                            accent: '#ffb703'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 4s ease-in-out infinite',
+                        'bounce-subtle': 'bounceSubtle 2s infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-10px) rotate(1.5deg)' }
+                        },
+                        bounceSubtle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #e2e8f0; overflow-x: hidden; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .cyber-glass { background: rgba(21, 28, 46, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(0, 240, 255, 0.15); }
+        .cyber-glass-pink { background: rgba(255, 42, 133, 0.05); border: 1px solid rgba(255, 42, 133, 0.25); }
+        .glow-cyan { box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); }
+        .glow-pink { box-shadow: 0 0 20px rgba(255, 42, 133, 0.25); }
+        .paw-print {
+            position: fixed; pointer-events: none; width: 22px; height: 22px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%2300f0ff'%3E%3Cpath d='M226.5 92.9c14.3 42.9-.3 86.2-32.6 96.8s-70.1-15.6-84.4-58.5s.3-86.2 32.6-96.8s70.1 15.6 84.4 58.5zM100.4 198.6c18.9 32.4 14.3 70.1-10.2 84.1s-59.7-.9-78.5-33.3S-2.7 179.3 21.8 165.3s59.7 .9 78.6 33.3zM385.5 189.7c-32.3-10.6-46.9-53.9-32.6-96.8s52.1-69.1 84.4-58.5s46.9 53.9 32.6 96.8s-52.1 69.1-84.4 58.5zM411.6 198.6c18.9-32.4 54.1-47.3 78.6-33.3s30.7 51.7 11.8 84.1s-54.1 47.3-78.6 33.3s-30.7-51.7-11.8-84.1zM256 224c-61.9 0-112 42.1-112 94c0 25.1 11.8 48 31.2 64.9c-11.6 23.3-33.7 42.1-34.1 42.5c-5.5 4.8-7.3 12.6-4.5 19.3s9.5 11.3 16.7 11.3c38.7 0 71.9-18.7 92.9-35.3c3.3 .2 6.6 .4 9.8 .4c61.9 0 112-42.1 112-94s-50.1-94-112-94z'/%3E%3C/svg%3E");
+            background-size: contain; transform: translate(-50%, -50%); animation: pawFade 0.8s forwards ease-out; z-index: 9999;
+        }
+        @keyframes pawFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.6) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(15deg); }
+        }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+        .inp { width: 100%; background: #0b0f19; border: 1px solid #2a3652; border-radius: 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.8rem; color: #fff; }
+        .inp:focus { outline: none; border-color: #00f0ff; }
+        .cfg-banner { display: none; }
+    </style>
+</head>
+<body class="selection:bg-cyber-neonCyan selection:text-cyber-dark min-h-screen flex flex-col justify-between">
+
+    <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    <div id="cfg-banner" class="cfg-banner bg-red-600 text-white text-xs font-mono text-center p-2">
+        Falta configurar Supabase: abre index.html y pega tu Project URL y tu clave publishable en las dos primeras líneas del script.
+    </div>
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-40 cyber-glass border-b border-cyber-border/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <a href="#" onclick="switchTab('tab-inicio'); return false;" class="flex items-center gap-3 group">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyber-neonPink to-cyber-neonCyan p-0.5 flex items-center justify-center glow-cyan group-hover:scale-105 transition-transform">
+                    <div class="w-full h-full bg-cyber-dark rounded-[10px] flex items-center justify-center relative overflow-hidden">
+                        <i class="fa-solid fa-cat text-cyber-neonCyan text-xl group-hover:text-cyber-neonPink transition-colors"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-cyber-neonCyan rounded-full animate-ping"></span>
+                    </div>
+                </div>
+                <div>
+                    <span class="font-orbitron font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-neonCyan via-white to-cyber-neonPink">APROBAZAO</span>
+                    <span class="block text-[9px] font-mono text-gray-400 tracking-widest uppercase -mt-1">IoT NFC Vending Platform</span>
+                </div>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-1 bg-cyber-card/60 p-1.5 rounded-2xl border border-cyber-border/60 text-xs font-semibold">
+                <button onclick="switchTab('tab-inicio')" data-tab="tab-inicio" class="nav-btn px-4 py-2 rounded-xl text-gray-300 hover:text-white transition-all flex items-center gap-2"><i class="fa-solid fa-house"></i> Inicio</button>
+                <button onclick="switchTab('tab-catalogo')" data-tab="tab-catalogo" class="nav-btn px-4 py-2 rounded-xl text-gray-300 hover:text-white transition-all flex items-center gap-2"><i class="fa-solid fa-microchip"></i> Catálogo & Stock</button>
+                <button onclick="switchTab('tab-recarga')" data-tab="tab-recarga" class="nav-btn px-4 py-2 rounded-xl text-gray-300 hover:text-white transition-all flex items-center gap-2"><i class="fa-solid fa-qrcode"></i> Recargar Saldo</button>
+                <button onclick="switchTab('tab-cuenta')" data-tab="tab-cuenta" class="nav-btn px-4 py-2 rounded-xl text-gray-300 hover:text-white transition-all flex items-center gap-2"><i class="fa-solid fa-id-card"></i> Mi Cuenta / NFC</button>
+                <button onclick="switchTab('tab-admin')" data-tab="tab-admin" class="nav-btn admin-only hidden px-4 py-2 rounded-xl text-cyber-neonPink hover:bg-cyber-neonPink/10 transition-all flex items-center gap-2 border border-cyber-neonPink/40"><i class="fa-solid fa-user-gear"></i> Panel Admin</button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div id="header-balance-badge" class="hidden cyber-glass-pink px-3 py-1.5 rounded-xl flex items-center gap-2 border border-cyber-neonPink/30 glow-pink">
+                    <i class="fa-solid fa-wifi text-cyber-neonPink animate-pulse text-xs"></i>
+                    <div class="text-xs">
+                        <span class="text-gray-400 block text-[8px] uppercase font-mono">Saldo</span>
+                        <span id="user-balance-display" class="font-bold text-cyber-neonPink font-mono text-xs">Bs. 0.00</span>
+                    </div>
+                </div>
+                <div id="auth-header-container"></div>
+            </div>
+        </div>
+        <!-- Navegación móvil -->
+        <nav class="md:hidden flex gap-1 overflow-x-auto px-3 pb-2 text-[11px] font-semibold">
+            <button onclick="switchTab('tab-inicio')" data-tab="tab-inicio" class="nav-btn whitespace-nowrap px-3 py-1.5 rounded-lg text-gray-300">Inicio</button>
+            <button onclick="switchTab('tab-catalogo')" data-tab="tab-catalogo" class="nav-btn whitespace-nowrap px-3 py-1.5 rounded-lg text-gray-300">Catálogo</button>
+            <button onclick="switchTab('tab-recarga')" data-tab="tab-recarga" class="nav-btn whitespace-nowrap px-3 py-1.5 rounded-lg text-gray-300">Recargar</button>
+            <button onclick="switchTab('tab-cuenta')" data-tab="tab-cuenta" class="nav-btn whitespace-nowrap px-3 py-1.5 rounded-lg text-gray-300">Mi Cuenta</button>
+            <button onclick="switchTab('tab-admin')" data-tab="tab-admin" class="nav-btn admin-only hidden whitespace-nowrap px-3 py-1.5 rounded-lg text-cyber-neonPink">Admin</button>
+        </nav>
+    </header>
+
+    <main class="flex-grow">
+
+        <!-- INICIO -->
+        <div id="tab-inicio" class="tab-pane active">
+            <section class="relative py-12 lg:py-20 overflow-hidden border-b border-cyber-border/30">
+                <div class="absolute top-1/4 left-10 w-96 h-96 bg-cyber-neonCyan/10 rounded-full blur-3xl -z-10"></div>
+                <div class="absolute bottom-1/4 right-10 w-96 h-96 bg-cyber-neonPink/10 rounded-full blur-3xl -z-10"></div>
+
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-6 text-center md:text-left">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyber-neonCyan/10 border border-cyber-neonCyan/30 text-cyber-neonCyan text-xs font-mono">
+                            <i class="fa-solid fa-paw text-cyber-neonPink animate-bounce-subtle"></i>
+                            <span>Expendedora IoT Universitaria - NFC</span>
+                        </div>
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black font-orbitron leading-tight text-white">
+                            Componentes al <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyber-neonCyan via-cyber-neonPurple to-cyber-neonPink">Instante con NFC</span>
+                        </h1>
+                        <p class="text-gray-300 text-base sm:text-lg max-w-xl leading-relaxed">
+                            Plataforma de venta de hardware electrónico. Cero efectivo en la máquina: saldo prepago, stock a la vista y tarjeta NFC como llave de acceso.
+                        </p>
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
+                            <button onclick="switchTab('tab-catalogo')" class="px-6 py-3.5 rounded-xl font-orbitron text-sm font-bold bg-gradient-to-r from-cyber-neonCyan to-blue-600 text-cyber-dark hover:brightness-110 transition-all shadow-lg glow-cyan flex items-center gap-2"><i class="fa-solid fa-microchip"></i> Ver Catálogo</button>
+                            <button onclick="switchTab('tab-recarga')" class="px-6 py-3.5 rounded-xl font-orbitron text-sm font-bold bg-cyber-card border border-cyber-neonPink/50 text-cyber-neonPink hover:bg-cyber-neonPink/10 transition-all flex items-center gap-2"><i class="fa-solid fa-wallet"></i> Recargar Saldo</button>
+                        </div>
+                        <div class="pt-6 border-t border-cyber-border/40 grid grid-cols-3 gap-4 text-center md:text-left">
+                            <div><span class="block text-2xl font-bold font-mono text-cyber-neonCyan" id="hero-total-stock">-</span><span class="text-xs text-gray-400">Piezas en Stock</span></div>
+                            <div><span class="block text-2xl font-bold font-mono text-cyber-neonPink" id="hero-total-products">-</span><span class="text-xs text-gray-400">Componentes</span></div>
+                            <div><span class="block text-2xl font-bold font-mono text-cyber-accent">100%</span><span class="text-xs text-gray-400">Pago Digital NFC</span></div>
+                        </div>
+                    </div>
+
+                    <div class="relative flex justify-center items-center">
+                        <div class="w-72 h-72 sm:w-80 sm:h-80 rounded-full border border-cyber-neonCyan/30 relative flex items-center justify-center">
+                            <div class="absolute inset-2 border border-dashed border-cyber-neonPink/30 rounded-full"></div>
+                        </div>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group" onclick="triggerCatMeow()">
+                            <div class="relative animate-float">
+                                <div id="cat-speech" class="absolute -top-10 left-1/2 -translate-x-1/2 bg-cyber-card border border-cyber-neonCyan text-cyber-neonCyan text-xs px-3 py-1 rounded-full font-mono shadow-xl whitespace-nowrap">⚡ ¡Miau! Bienvenido a APROBAZAO</div>
+                                <svg class="w-52 h-52 sm:w-64 sm:h-64 drop-shadow-[0_0_25px_rgba(0,240,255,0.4)]" viewBox="0 0 200 200" fill="none">
+                                    <polygon points="45,60 25,10 75,40" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
+                                    <polygon points="155,60 175,10 125,40" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
+                                    <rect x="40" y="40" width="120" height="100" rx="35" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
+                                    <rect x="52" y="62" width="96" height="52" rx="15" fill="#0b0f19" stroke="#00f0ff" stroke-width="2"/>
+                                    <circle cx="76" cy="88" r="10" fill="#00f0ff"/>
+                                    <circle cx="124" cy="88" r="10" fill="#00f0ff"/>
+                                    <polygon points="100,98 95,104 105,104" fill="#ff2a85"/>
+                                    <path d="M30 80 L50 83 M25 95 L50 93" stroke="#00f0ff" stroke-width="2"/>
+                                    <path d="M170 80 L150 83 M175 95 L150 93" stroke="#00f0ff" stroke-width="2"/>
+                                    <line x1="100" y1="40" x2="100" y2="18" stroke="#00f0ff" stroke-width="4"/>
+                                    <circle cx="100" cy="14" r="6" fill="#ff2a85"/>
+                                </svg>
+                                <p class="text-center text-xs text-gray-400 mt-2 font-mono group-hover:text-cyber-neonCyan">[ Haz clic sobre NekoBot 🐾 ]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- CATÁLOGO -->
+        <div id="tab-catalogo" class="tab-pane max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-cyber-border/40 pb-6">
+                <div>
+                    <div class="flex items-center gap-2 text-cyber-neonPink font-mono text-xs uppercase tracking-widest mb-1"><i class="fa-solid fa-boxes-stacked"></i> Inventario de la máquina</div>
+                    <h2 class="text-3xl font-black font-orbitron text-white">Catálogo de Componentes</h2>
+                    <p class="text-xs text-gray-400 mt-1">Consulta precios y stock antes de ir a la máquina. La compra se hace con tu tarjeta NFC.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input type="text" id="catalog-search" oninput="renderCatalog()" placeholder="Buscar componente..." class="bg-cyber-card border border-cyber-border/70 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-cyber-neonCyan w-48 sm:w-64">
+                    </div>
+                    <div id="category-filters" class="flex flex-wrap items-center gap-1 bg-cyber-card p-1 rounded-xl border border-cyber-border/50 text-xs"></div>
+                </div>
+            </div>
+            <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </div>
+
+        <!-- RECARGA -->
+        <div id="tab-recarga" class="tab-pane max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <span class="text-cyber-neonCyan font-mono text-xs uppercase tracking-widest block mb-1"><i class="fa-solid fa-bolt"></i> Saldo Prepago</span>
+                <h2 class="text-3xl font-black font-orbitron text-white">Recarga tu Saldo</h2>
+                <p class="text-gray-400 text-xs sm:text-sm mt-2">Indica el monto, paga con el QR desde tu app bancaria y envía la solicitud. La administradora verificará el depósito y acreditará exactamente el monto que indicaste.</p>
+            </div>
+
+            <div id="recarga-gate" class="max-w-xl mx-auto"></div>
+
+            <div id="recarga-content" class="hidden grid lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto">
+                <div class="lg:col-span-5 cyber-glass p-6 rounded-2xl text-center space-y-4">
+                    <span class="text-xs font-mono text-gray-300 block">QR Bancario de APROBAZAO</span>
+                    <div class="p-3 bg-white rounded-xl inline-block shadow-2xl">
+                        <img id="public-qr-img" src="img/qr-banco.png" alt="QR Bancario" class="w-48 h-48 sm:w-56 sm:h-56 object-contain rounded-lg" onerror="this.alt='Falta el archivo img/qr-banco.png'">
+                    </div>
+                    <p class="text-[11px] text-gray-400">Escanea el QR con tu app bancaria y transfiere el monto que vas a indicar en la solicitud.</p>
+                </div>
+
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="cyber-glass p-6 sm:p-8 rounded-2xl border border-cyber-neonCyan/30">
+                        <h3 class="text-lg font-bold font-orbitron text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-cyber-neonCyan"></i> Solicitud de Recarga</h3>
+                        <form id="topup-form" onsubmit="submitTopupRequest(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-mono text-gray-300 mb-1">Monto que depositarás (Bs.)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">Bs.</span>
+                                    <input type="number" id="topup-amount" min="1" max="99999999" step="0.01" value="20" required class="w-full bg-cyber-dark border border-cyber-border/80 rounded-xl pl-10 pr-4 py-2.5 text-white font-mono font-bold focus:outline-none focus:border-cyber-neonCyan">
+                                </div>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" onclick="setPresetAmount(10)" class="px-3 py-1 rounded-lg bg-cyber-dark border border-cyber-border text-xs text-gray-300 hover:border-cyber-neonCyan">Bs. 10</button>
+                                    <button type="button" onclick="setPresetAmount(20)" class="px-3 py-1 rounded-lg bg-cyber-dark border border-cyber-border text-xs text-gray-300 hover:border-cyber-neonCyan">Bs. 20</button>
+                                    <button type="button" onclick="setPresetAmount(50)" class="px-3 py-1 rounded-lg bg-cyber-dark border border-cyber-border text-xs text-gray-300 hover:border-cyber-neonCyan">Bs. 50</button>
+                                    <button type="button" onclick="setPresetAmount(100)" class="px-3 py-1 rounded-lg bg-cyber-dark border border-cyber-border text-xs text-gray-300 hover:border-cyber-neonCyan">Bs. 100</button>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-yellow-300/80">Importante: transfiere exactamente el monto que indiques aquí. Si no coincide, la solicitud puede ser rechazada.</p>
+                            <button id="topup-submit-btn" type="submit" class="w-full py-3.5 rounded-xl font-orbitron font-bold text-sm bg-gradient-to-r from-cyber-neonPink to-purple-600 text-white hover:brightness-110 transition-all shadow-lg glow-pink flex items-center justify-center gap-2"><i class="fa-solid fa-paper-plane"></i> Enviar Solicitud de Recarga</button>
+                        </form>
+                    </div>
+                    <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60">
+                        <h4 class="text-sm font-bold text-white mb-3">Mis solicitudes recientes</h4>
+                        <div id="recarga-my-requests" class="space-y-2 text-xs font-mono"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MI CUENTA -->
+        <div id="tab-cuenta" class="tab-pane max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div id="cuenta-gate" class="max-w-xl mx-auto"></div>
+
+            <div id="cuenta-content" class="hidden space-y-8">
+                <div class="cyber-glass p-6 rounded-2xl border border-cyber-neonCyan/40 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-cyber-neonCyan/20 text-cyber-neonCyan border border-cyber-neonCyan flex items-center justify-center text-3xl"><i class="fa-solid fa-id-card"></i></div>
+                        <div>
+                            <h3 id="profile-name-display" class="text-xl font-bold font-orbitron text-white"></h3>
+                            <p id="profile-email-display" class="text-xs font-mono text-gray-400"></p>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                <span id="profile-status-display" class="inline-block px-2.5 py-0.5 rounded text-[10px] font-mono border"></span>
+                                <span id="profile-uid-display" class="inline-block px-2.5 py-0.5 rounded bg-cyber-neonPink/20 text-cyber-neonPink text-[10px] font-mono border border-cyber-neonPink/40"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right font-mono">
+                        <span class="text-xs text-gray-400 block">Saldo disponible:</span>
+                        <span id="profile-balance-display" class="text-3xl font-black text-cyber-neonCyan">Bs. 0.00</span>
+                    </div>
+                </div>
+
+                <div class="cyber-glass p-6 rounded-2xl border border-cyber-border/60">
+                    <h4 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-clock-rotate-left text-cyber-neonCyan mr-2"></i>Historial de saldo</h4>
+                    <div id="my-ledger" class="space-y-2 text-xs font-mono"></div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <span class="text-cyber-neonPink font-mono text-xs uppercase tracking-widest block mb-1"><i class="fa-solid fa-diagram-project"></i> Cómo funcionará la máquina</span>
+                        <h3 class="text-xl font-black font-orbitron text-white">Tu tarjeta NFC</h3>
+                        <p class="text-xs text-gray-400 mt-1">La conexión con la máquina estará disponible próximamente.</p>
+                    </div>
+                    <div class="grid md:grid-cols-4 gap-4">
+                        <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60 text-xs space-y-2"><div class="w-8 h-8 rounded-lg bg-cyber-neonCyan/20 text-cyber-neonCyan flex items-center justify-center font-bold">1</div><h4 class="font-bold text-white">Acercas tu tarjeta</h4><p class="text-gray-400 text-[11px]">El lector de la máquina lee el código único (UID) de tu tarjeta o llavero.</p></div>
+                        <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60 text-xs space-y-2"><div class="w-8 h-8 rounded-lg bg-cyber-neonPink/20 text-cyber-neonPink flex items-center justify-center font-bold">2</div><h4 class="font-bold text-white">Consulta a la nube</h4><p class="text-gray-400 text-[11px]">La máquina consulta a qué cuenta pertenece ese UID.</p></div>
+                        <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60 text-xs space-y-2"><div class="w-8 h-8 rounded-lg bg-cyber-neonPurple/20 text-cyber-neonPurple flex items-center justify-center font-bold">3</div><h4 class="font-bold text-white">Validación de saldo</h4><p class="text-gray-400 text-[11px]">Se verifica que tu cuenta esté aprobada y tenga saldo suficiente.</p></div>
+                        <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60 text-xs space-y-2"><div class="w-8 h-8 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center font-bold">4</div><h4 class="font-bold text-white">Dispensado</h4><p class="text-gray-400 text-[11px]">Se descuenta el monto y la máquina entrega el componente.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUTH -->
+        <div id="tab-auth" class="tab-pane max-w-md mx-auto px-4 py-12">
+            <div class="cyber-glass p-8 rounded-2xl border border-cyber-neonCyan/40 glow-cyan">
+                <div class="flex border-b border-cyber-border/80 mb-6">
+                    <button onclick="switchAuthSubTab('login')" id="btn-auth-login" class="w-1/2 py-2 text-center font-orbitron text-xs font-bold text-cyber-neonCyan border-b-2 border-cyber-neonCyan">Iniciar Sesión</button>
+                    <button onclick="switchAuthSubTab('register')" id="btn-auth-register" class="w-1/2 py-2 text-center font-orbitron text-xs font-bold text-gray-400 border-b-2 border-transparent hover:text-white">Registrarse</button>
+                </div>
+
+                <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div><label class="block text-xs font-mono text-gray-300 mb-1">Correo Electrónico</label><input type="email" id="login-email" required autocomplete="email" class="inp"></div>
+                    <div><label class="block text-xs font-mono text-gray-300 mb-1">Contraseña</label><input type="password" id="login-password" required autocomplete="current-password" class="inp"></div>
+                    <button id="login-btn" type="submit" class="w-full py-3 bg-cyber-neonCyan text-cyber-dark font-orbitron font-bold rounded-xl text-xs hover:brightness-110 shadow-lg">Entrar a la Plataforma</button>
+                </form>
+
+                <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3 hidden">
+                    <div><label class="block text-[11px] font-mono text-gray-300 mb-1">Nombre Completo</label><input type="text" id="reg-name" required maxlength="100" placeholder="Ej. Carlos Mamani" class="inp"></div>
+                    <div><label class="block text-[11px] font-mono text-gray-300 mb-1">Carnet de Identidad (C.I.)</label><input type="text" id="reg-ci" required maxlength="20" placeholder="Ej. 8932014" class="inp"></div>
+                    <div><label class="block text-[11px] font-mono text-gray-300 mb-1">Celular</label><input type="tel" id="reg-phone" required maxlength="15" placeholder="Ej. 76543210" class="inp"></div>
+                    <div><label class="block text-[11px] font-mono text-gray-300 mb-1">Correo Electrónico</label><input type="email" id="reg-email" required autocomplete="email" placeholder="tucorreo@ejemplo.com" class="inp"></div>
+                    <div><label class="block text-[11px] font-mono text-gray-300 mb-1">Contraseña (mínimo 6 caracteres)</label><input type="password" id="reg-password" required minlength="6" autocomplete="new-password" class="inp"></div>
+                    <button id="register-btn" type="submit" class="w-full py-3 bg-cyber-neonPink text-white font-orbitron font-bold rounded-xl text-xs hover:brightness-110 shadow-lg glow-pink">Crear Mi Cuenta</button>
+                    <p class="text-[11px] text-gray-400">Tu cuenta quedará pendiente hasta que la administradora la apruebe.</p>
+                </form>
+            </div>
+        </div>
+
+        <!-- ADMIN -->
+        <div id="tab-admin" class="tab-pane max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div class="bg-cyber-card border border-cyber-neonCyan/40 p-6 rounded-2xl flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-cyber-neonCyan/20 text-cyber-neonCyan flex items-center justify-center text-2xl"><i class="fa-solid fa-user-shield"></i></div>
+                <div>
+                    <h2 class="text-xl font-bold font-orbitron text-white">Panel Administrador APROBAZAO</h2>
+                    <p class="text-xs text-gray-400 font-mono">Usuarios, recargas, efectivo, tarjetas NFC e inventario</p>
+                </div>
+            </div>
+
+            <div class="flex border-b border-cyber-border/80 overflow-x-auto">
+                <button onclick="switchAdminTab('users')" data-sub="users" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-users mr-2"></i>Usuarios (<span id="cnt-users">0</span>)</button>
+                <button onclick="switchAdminTab('topups')" data-sub="topups" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-qrcode mr-2"></i>Recargas QR (<span id="cnt-topups">0</span>)</button>
+                <button onclick="switchAdminTab('cash')" data-sub="cash" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-money-bill-wave mr-2"></i>Recarga Efectivo</button>
+                <button onclick="switchAdminTab('nfc')" data-sub="nfc" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-wifi mr-2"></i>Tarjetas NFC</button>
+                <button onclick="switchAdminTab('products')" data-sub="products" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-boxes-stacked mr-2"></i>Inventario</button>
+                <button onclick="switchAdminTab('ledger')" data-sub="ledger" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-list mr-2"></i>Movimientos</button>
+            </div>
+
+            <!-- Usuarios -->
+            <div id="admin-sub-users" class="admin-sub-pane space-y-4">
+                <h3 class="text-lg font-bold text-white">Cuentas registradas</h3>
+                <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Nombre</th><th class="p-3">C.I.</th><th class="p-3">Celular</th><th class="p-3">Correo</th><th class="p-3">Estado</th><th class="p-3">Saldo</th><th class="p-3 text-center">Acciones</th></tr></thead>
+                        <tbody id="admin-users-table" class="divide-y divide-cyber-border/40"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Recargas QR -->
+            <div id="admin-sub-topups" class="admin-sub-pane hidden space-y-4">
+                <h3 class="text-lg font-bold text-white">Solicitudes de recarga por QR pendientes</h3>
+                <p class="text-xs text-gray-400">Verifica el depósito en tu banca móvil. Al aprobar se acredita exactamente el monto indicado por la persona.</p>
+                <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Persona</th><th class="p-3">C.I.</th><th class="p-3">Monto indicado</th><th class="p-3">Fecha</th><th class="p-3 text-center">Acción</th></tr></thead>
+                        <tbody id="admin-topup-table" class="divide-y divide-cyber-border/40"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Efectivo -->
+            <div id="admin-sub-cash" class="admin-sub-pane hidden space-y-4">
+                <h3 class="text-lg font-bold text-white">Cargar saldo en efectivo</h3>
+                <div class="cyber-glass p-6 rounded-2xl border border-cyber-border max-w-xl">
+                    <form onsubmit="submitCashTopup(event)" class="space-y-4">
+                        <div><label class="block text-xs font-mono text-gray-300 mb-1">Persona (solo cuentas aprobadas)</label><select id="cash-user" required class="inp"></select></div>
+                        <div><label class="block text-xs font-mono text-gray-300 mb-1">Monto recibido (Bs.)</label><input type="number" id="cash-amount" min="0.01" max="99999999" step="0.01" required class="inp"></div>
+                        <div><label class="block text-xs font-mono text-gray-300 mb-1">Nota (opcional)</label><input type="text" id="cash-note" maxlength="120" placeholder="Ej. Pago en persona" class="inp"></div>
+                        <button id="cash-btn" type="submit" class="w-full py-3 bg-cyber-neonCyan text-cyber-dark font-orbitron font-bold rounded-xl text-xs hover:brightness-110">Acreditar saldo</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- NFC -->
+            <div id="admin-sub-nfc" class="admin-sub-pane hidden space-y-6">
+                <h3 class="text-lg font-bold text-white">Vincular tarjeta NFC</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="cyber-glass p-6 rounded-2xl border border-cyber-border">
+                        <form onsubmit="submitNfcLink(event)" class="space-y-4">
+                            <div><label class="block text-xs font-mono text-gray-300 mb-1">Persona (solo cuentas aprobadas)</label><select id="nfc-user" required class="inp"></select></div>
+                            <div><label class="block text-xs font-mono text-gray-300 mb-1">UID de la tarjeta</label><input type="text" id="nfc-uid" required maxlength="40" placeholder="Ej. 04:A2:3F:8B" class="inp font-mono"></div>
+                            <button id="nfc-btn" type="submit" class="w-full py-3 bg-cyber-neonCyan text-cyber-dark font-orbitron font-bold rounded-xl text-xs hover:brightness-110">Guardar vinculación</button>
+                        </form>
+                        <p class="text-[11px] text-gray-400 mt-3">Por ahora escribe el UID a mano. Más adelante lo entregará el lector físico.</p>
+                    </div>
+                    <div class="cyber-glass p-6 rounded-2xl border border-cyber-border">
+                        <h4 class="text-sm font-bold text-white mb-4">Tarjetas asignadas</h4>
+                        <div id="admin-linked-cards-list" class="space-y-3 text-xs font-mono"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventario -->
+            <div id="admin-sub-products" class="admin-sub-pane hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-white">Inventario y catálogo</h3>
+                    <button onclick="openProductModal()" class="px-4 py-2 bg-cyber-neonCyan text-cyber-dark font-bold font-orbitron rounded-xl text-xs hover:brightness-110"><i class="fa-solid fa-plus mr-1"></i> Nuevo Componente</button>
+                </div>
+                <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Foto</th><th class="p-3">Nombre</th><th class="p-3">Categoría</th><th class="p-3">Precio</th><th class="p-3">Stock</th><th class="p-3">Visible</th><th class="p-3 text-center">Acciones</th></tr></thead>
+                        <tbody id="admin-product-table" class="divide-y divide-cyber-border/40"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Movimientos -->
+            <div id="admin-sub-ledger" class="admin-sub-pane hidden space-y-4">
+                <h3 class="text-lg font-bold text-white">Últimos movimientos de saldo</h3>
+                <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Fecha</th><th class="p-3">Persona</th><th class="p-3">Tipo</th><th class="p-3">Monto</th><th class="p-3">Registró</th><th class="p-3">Nota</th></tr></thead>
+                        <tbody id="admin-ledger-table" class="divide-y divide-cyber-border/40"></tbody>
+                    </table>
+                </div></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL PRODUCTO -->
+    <div id="product-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="cyber-glass max-w-md w-full p-6 rounded-2xl border border-cyber-neonCyan relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="product-modal-title" class="text-lg font-bold font-orbitron text-white">Componente</h3>
+            <form onsubmit="saveProduct(event)" class="space-y-3 text-xs font-mono">
+                <input type="hidden" id="prod-edit-id">
+                <div><label class="block text-gray-300 mb-1">Nombre</label><input type="text" id="prod-edit-name" required maxlength="120" class="inp"></div>
+                <div><label class="block text-gray-300 mb-1">Descripción (opcional)</label><input type="text" id="prod-edit-desc" maxlength="300" class="inp"></div>
+                <div><label class="block text-gray-300 mb-1">Categoría</label><input type="text" id="prod-edit-category" list="cat-list" required maxlength="40" placeholder="Ej. Sensores" class="inp"><datalist id="cat-list"></datalist></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-gray-300 mb-1">Precio (Bs.)</label><input type="number" step="0.01" min="0" max="99999999" id="prod-edit-price" required class="inp"></div>
+                    <div><label class="block text-gray-300 mb-1">Stock</label><input type="number" step="1" min="0" max="100000" id="prod-edit-stock" required class="inp"></div>
+                </div>
+                <div><label class="block text-gray-300 mb-1">Imagen (opcional): ruta como img/esp32.png o enlace https://...</label><input type="text" id="prod-edit-img" maxlength="500" class="inp"></div>
+                <label class="flex items-center gap-2 text-gray-300"><input type="checkbox" id="prod-edit-active" checked> Visible en el catálogo</label>
+                <button id="prod-save-btn" type="submit" class="w-full py-3 bg-cyber-neonCyan text-cyber-dark font-orbitron font-bold rounded-xl text-xs hover:brightness-110 mt-2">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="cyber-glass border-t border-cyber-border/50 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+            <div class="flex items-center gap-2"><i class="fa-solid fa-cat text-cyber-neonPink"></i><span>APROBAZAO - Plataforma IoT de Gestión de Componentes NFC</span></div>
+            <div class="font-mono">&copy; 2026 Facultad de Ingeniería</div>
+        </div>
+    </footer>
+
+    <script>
+        /* =================================================================
+           CONFIGURACIÓN DE SUPABASE  (pega aquí tus dos datos públicos)
+           NUNCA pegues la clave "secret" / "service_role" aquí.
+           ================================================================= */
+        const SUPABASE_URL = 'PEGA_AQUI_TU_PROJECT_URL';
+        const SUPABASE_KEY = 'PEGA_AQUI_TU_CLAVE_PUBLISHABLE';
+
+        const configured = SUPABASE_URL.startsWith('https://') && !SUPABASE_KEY.startsWith('PEGA_AQUI');
+        if (!configured) document.getElementById('cfg-banner').style.display = 'block';
+        const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+        /* ---------------- Estado ---------------- */
+        const S = {
+            session: null, profile: null,
+            products: [], category: 'all',
+            adminProfiles: [], adminTopups: [], adminLedger: [], adminProducts: []
+        };
+
+        /* ---------------- Utilidades ---------------- */
+        function esc(v) {
+            return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        const money = n => 'Bs. ' + Number(n || 0).toFixed(2);
+        const fdate = d => d ? new Date(d).toLocaleString('es-BO') : '-';
+        const isAdmin = () => S.profile && S.profile.role === 'admin' && S.profile.status === 'approved';
+        const isApproved = () => S.profile && S.profile.status === 'approved';
+        const TYPE_LABEL = { topup_qr: 'Recarga QR', topup_cash: 'Recarga efectivo', purchase: 'Compra', adjustment: 'Ajuste' };
+        const STATUS_LABEL = { pending: 'Pendiente', approved: 'Aprobada', rejected: 'Rechazada' };
+        const STATUS_CLASS = {
+            pending: 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10',
+            approved: 'text-green-400 border-green-400/40 bg-green-400/10',
+            rejected: 'text-red-400 border-red-400/40 bg-red-400/10'
+        };
+        const badge = s => `<span class="px-2 py-0.5 rounded border text-[10px] ${STATUS_CLASS[s] || ''}">${esc(STATUS_LABEL[s] || s)}</span>`;
+        function safeImg(u) {
+            u = (u || '').trim();
+            return (/^https?:\/\//i.test(u) || /^img\/[\w\-./ ]+$/i.test(u)) ? u : '';
+        }
+        function imgOrIcon(u, cls) {
+            const s = safeImg(u);
+            return s ? `<img src="${esc(s)}" alt="" class="${cls}" onerror="this.style.display='none'">`
+                     : `<div class="${cls} flex items-center justify-center text-gray-500"><i class="fa-solid fa-microchip"></i></div>`;
+        }
+        function errMsg(e) {
+            const m = (e && e.message) || 'Error desconocido';
+            if (e && e.code === '23505') return 'Ese UID ya está asignado a otra persona';
+            return m;
+        }
+        function setBusy(id, busy, label) {
+            const b = document.getElementById(id); if (!b) return;
+            if (busy) { b.dataset.old = b.innerHTML; b.disabled = true; b.innerHTML = label || 'Procesando...'; b.classList.add('opacity-60'); }
+            else { b.disabled = false; if (b.dataset.old) b.innerHTML = b.dataset.old; b.classList.remove('opacity-60'); }
+        }
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            let border = 'border-cyber-neonCyan text-cyber-neonCyan';
+            if (type === 'success') border = 'border-green-400 text-green-400';
+            if (type === 'error') border = 'border-cyber-neonPink text-cyber-neonPink';
+            t.className = `cyber-glass p-3.5 rounded-xl border ${border} text-xs font-mono flex items-center gap-2 shadow-xl pointer-events-auto`;
+            const i = document.createElement('i'); i.className = 'fa-solid fa-circle-info';
+            const s = document.createElement('span'); s.className = 'text-white'; s.textContent = msg;
+            t.append(i, s); c.appendChild(t);
+            setTimeout(() => t.remove(), 5000);
+        }
+
+        /* ---------------- Inicio ---------------- */
+        window.addEventListener('DOMContentLoaded', async () => {
+            document.addEventListener('click', e => createPawPrint(e.clientX, e.clientY));
+            switchAdminTab('users');
+            switchTab('tab-inicio');
+            updateHeader();
+            if (!sb) { renderCatalog(); return; }
+
+            await loadProducts();
+            const { data } = await sb.auth.getSession();
+            S.session = data.session;
+            if (S.session) await loadProfile();
+            updateHeader(); renderGates();
+
+            sb.auth.onAuthStateChange((event, session) => {
+                S.session = session;
+                setTimeout(async () => {
+                    if (session) await loadProfile(); else S.profile = null;
+                    updateHeader(); renderGates();
+                }, 0);
+            });
+        });
+
+        function createPawPrint(x, y) {
+            const p = document.createElement('div');
+            p.className = 'paw-print'; p.style.left = x + 'px'; p.style.top = y + 'px';
+            document.body.appendChild(p); setTimeout(() => p.remove(), 800);
+        }
+        function triggerCatMeow() {
+            const m = ['🐾 ¡Miau! Sistema APROBAZAO listo', '⚡ Tu saldo, tu tarjeta, tus componentes', '💳 Recarga y acércate a la máquina', '🤖 ¿Necesitas sensores para tu proyecto?'];
+            document.getElementById('cat-speech').textContent = m[Math.floor(Math.random() * m.length)];
+        }
+
+        /* ---------------- Navegación ---------------- */
+        function switchTab(id) {
+            if (id === 'tab-admin' && !isAdmin()) { showToast('Esta sección es solo para la administradora', 'error'); return; }
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const on = b.dataset.tab === id;
+                b.classList.toggle('bg-cyber-neonCyan', on);
+                b.classList.toggle('text-cyber-dark', on);
+                b.classList.toggle('font-bold', on);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (id === 'tab-catalogo') loadProducts();
+            if (id === 'tab-recarga') { renderGates(); loadMyRequests(); }
+            if (id === 'tab-cuenta') { renderGates(); loadMyLedger(); }
+            if (id === 'tab-admin') loadAdmin();
+        }
+
+        function switchAuthSubTab(mode) {
+            const login = mode === 'login';
+            document.getElementById('form-login').classList.toggle('hidden', !login);
+            document.getElementById('form-register').classList.toggle('hidden', login);
+            const on = ['text-cyber-neonCyan', 'border-cyber-neonCyan'], off = ['text-gray-400', 'border-transparent'];
+            const bl = document.getElementById('btn-auth-login'), br = document.getElementById('btn-auth-register');
+            bl.classList.remove(...on, ...off); br.classList.remove(...on, ...off);
+            bl.classList.add(...(login ? on : off)); br.classList.add(...(login ? off : on));
+        }
+
+        function switchAdminTab(name) {
+            document.querySelectorAll('.admin-sub-pane').forEach(p => p.classList.add('hidden'));
+            document.getElementById('admin-sub-' + name).classList.remove('hidden');
+            document.querySelectorAll('.admin-tab-btn').forEach(b => {
+                const on = b.dataset.sub === name;
+                b.classList.toggle('text-cyber-neonCyan', on); b.classList.toggle('border-cyber-neonCyan', on);
+                b.classList.toggle('text-gray-400', !on); b.classList.toggle('border-transparent', !on);
+            });
+        }
+
+        /* ---------------- Autenticación ---------------- */
+        async function handleLogin(e) {
+            e.preventDefault();
+            if (!sb) return showToast('Falta configurar Supabase', 'error');
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            setBusy('login-btn', true, 'Entrando...');
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            setBusy('login-btn', false);
+            if (error) {
+                const m = error.message || '';
+                if (/confirm/i.test(m)) return showToast('Debes confirmar tu correo primero. Revisa tu bandeja (y spam).', 'error');
+                return showToast('Correo o contraseña incorrectos', 'error');
+            }
+            document.getElementById('login-password').value = '';
+            showToast('Sesión iniciada', 'success');
+            setTimeout(() => switchTab('tab-cuenta'), 400);
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            if (!sb) return showToast('Falta configurar Supabase', 'error');
+            const full_name = document.getElementById('reg-name').value.trim();
+            const ci = document.getElementById('reg-ci').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            if (full_name.length < 3) return showToast('Escribe tu nombre completo', 'error');
+            if (!ci) return showToast('El carnet es obligatorio', 'error');
+            if (!/^[0-9+ ]{7,15}$/.test(phone)) return showToast('Celular no válido (solo números)', 'error');
+            if (password.length < 6) return showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+
+            setBusy('register-btn', true, 'Creando cuenta...');
+            const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name, ci, phone } } });
+            setBusy('register-btn', false);
+            if (error) return showToast(errMsg(error), 'error');
+
+            document.getElementById('form-register').reset();
+            if (!data.session) {
+                showToast('Cuenta creada. Confirma tu correo (revisa tu bandeja) y luego inicia sesión. Después, la administradora debe aprobarte.', 'success');
+                switchAuthSubTab('login');
+            } else {
+                showToast('Cuenta creada. Queda pendiente de aprobación.', 'success');
+                switchTab('tab-cuenta');
+            }
+        }
+
+        async function handleLogout() {
+            await sb.auth.signOut();
+            S.profile = null; S.session = null;
+            updateHeader(); renderGates();
+            switchTab('tab-inicio');
+            showToast('Sesión cerrada', 'info');
+        }
+
+        async function loadProfile() {
+            const { data, error } = await sb.from('profiles').select('*').eq('id', S.session.user.id).maybeSingle();
+            S.profile = error ? null : data;
+        }
+
+        function updateHeader() {
+            const auth = document.getElementById('auth-header-container');
+            const badgeEl = document.getElementById('header-balance-badge');
+            document.querySelectorAll('.admin-only').forEach(b => b.classList.toggle('hidden', !isAdmin()));
+            if (S.session && S.profile) {
+                badgeEl.classList.toggle('hidden', !isApproved());
+                document.getElementById('user-balance-display').textContent = money(S.profile.balance);
+                auth.innerHTML = `<div class="flex items-center gap-2">
+                    <span class="text-xs font-mono text-gray-300 hidden sm:inline">${esc(S.profile.full_name)}</span>
+                    <button onclick="handleLogout()" title="Cerrar sesión" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-power-off"></i></button></div>`;
+            } else {
+                badgeEl.classList.add('hidden');
+                auth.innerHTML = `<button onclick="switchTab('tab-auth')" class="px-3.5 py-2 rounded-xl text-xs font-bold font-orbitron bg-cyber-card border border-cyber-neonCyan/40 text-cyber-neonCyan hover:bg-cyber-neonCyan hover:text-cyber-dark transition-all flex items-center gap-2"><i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión</button>`;
+            }
+        }
+
+        function gateBox(icon, title, text, btn) {
+            return `<div class="cyber-glass p-8 rounded-2xl text-center border border-cyber-neonPink/30 space-y-3">
+                <i class="fa-solid ${icon} text-3xl text-cyber-neonPink"></i>
+                <h3 class="font-orbitron font-bold text-white">${esc(title)}</h3>
+                <p class="text-xs text-gray-300">${esc(text)}</p>${btn || ''}</div>`;
+        }
+        const loginBtn = `<button onclick="switchTab('tab-auth')" class="px-5 py-2.5 rounded-xl text-xs font-bold font-orbitron bg-cyber-neonCyan text-cyber-dark">Iniciar sesión / Registrarme</button>`;
+
+        function renderGates() {
+            const rg = document.getElementById('recarga-gate'), rc = document.getElementById('recarga-content');
+            const cg = document.getElementById('cuenta-gate'), cc = document.getElementById('cuenta-content');
+            let gate = null;
+            if (!S.session || !S.profile) gate = gateBox('fa-lock', 'Inicia sesión', 'Necesitas una cuenta para continuar.', loginBtn);
+            else if (S.profile.status === 'pending') gate = gateBox('fa-hourglass-half', 'Cuenta pendiente de aprobación', 'La administradora aún no aprobó tu cuenta. Cuando lo haga podrás recargar saldo y usar tu tarjeta.');
+            else if (S.profile.status === 'rejected') gate = gateBox('fa-ban', 'Cuenta rechazada', 'Tu cuenta no fue aprobada. Contacta a la administradora.');
+
+            // Recarga: solo cuentas aprobadas
+            rg.innerHTML = gate || '';
+            rc.classList.toggle('hidden', !!gate); rc.classList.toggle('grid', !gate);
+
+            // Mi cuenta: se muestra con sesión aunque esté pendiente
+            if (!S.session || !S.profile) {
+                cg.innerHTML = gate; cc.classList.add('hidden');
+            } else {
+                cg.innerHTML = S.profile.status === 'pending' ? gate : (S.profile.status === 'rejected' ? gate : '');
+                cc.classList.toggle('hidden', S.profile.status === 'rejected');
+                document.getElementById('profile-name-display').textContent = S.profile.full_name;
+                document.getElementById('profile-email-display').textContent = S.profile.email + ' · C.I. ' + S.profile.ci;
+                const st = document.getElementById('profile-status-display');
+                st.textContent = 'Cuenta ' + (STATUS_LABEL[S.profile.status] || '').toLowerCase();
+                st.className = 'inline-block px-2.5 py-0.5 rounded text-[10px] font-mono border ' + (STATUS_CLASS[S.profile.status] || '');
+                document.getElementById('profile-uid-display').textContent = S.profile.nfc_uid ? 'UID NFC: ' + S.profile.nfc_uid : 'Tarjeta NFC: sin vincular';
+                document.getElementById('profile-balance-display').textContent = money(S.profile.balance);
+            }
+        }
+
+        /* ---------------- Catálogo ---------------- */
+        async function loadProducts() {
+            if (!sb) return;
+            const { data, error } = await sb.from('products').select('*').eq('active', true).order('category').order('name');
+            if (error) return showToast('No se pudo cargar el catálogo: ' + errMsg(error), 'error');
+            S.products = data || [];
+            renderCatalog(); renderHeroStats();
+        }
+        function renderHeroStats() {
+            document.getElementById('hero-total-stock').textContent = S.products.reduce((a, p) => a + p.stock, 0);
+            document.getElementById('hero-total-products').textContent = S.products.length;
+        }
+        function renderCatalog() {
+            const cats = ['all', ...new Set(S.products.map(p => p.category).filter(Boolean))];
+            if (!cats.includes(S.category)) S.category = 'all';
+            const f = document.getElementById('category-filters'); f.innerHTML = '';
+            cats.forEach(c => {
+                const b = document.createElement('button');
+                const on = c === S.category;
+                b.className = 'px-3 py-1.5 rounded-lg transition-all ' + (on ? 'bg-cyber-neonCyan text-cyber-dark font-bold' : 'text-gray-300 hover:text-white');
+                b.textContent = c === 'all' ? 'Todos' : c;
+                b.onclick = () => { S.category = c; renderCatalog(); };
+                f.appendChild(b);
+            });
+            const q = document.getElementById('catalog-search').value.toLowerCase();
+            const grid = document.getElementById('catalog-grid');
+            const list = S.products.filter(p => (S.category === 'all' || p.category === S.category) &&
+                (p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)));
+            if (!list.length) { grid.innerHTML = '<p class="text-xs text-gray-400 font-mono col-span-full text-center py-10">No hay componentes para mostrar.</p>'; return; }
+            grid.innerHTML = list.map(p => `
+                <div class="cyber-glass p-4 rounded-2xl flex flex-col justify-between border border-cyber-border/60 hover:border-cyber-neonCyan transition-all duration-300 hover:-translate-y-1 group">
+                    <div>
+                        <div class="relative w-full h-36 rounded-xl overflow-hidden mb-3 bg-cyber-dark">
+                            ${imgOrIcon(p.image_url, 'w-full h-full object-cover')}
+                        </div>
+                        <h3 class="font-bold text-white text-sm">${esc(p.name)}</h3>
+                        <span class="text-[11px] text-gray-400 block mb-1">${esc(p.category || '')}</span>
+                        ${p.description ? `<p class="text-[11px] text-gray-500 mb-2">${esc(p.description)}</p>` : ''}
+                    </div>
+                    <div class="pt-3 border-t border-cyber-border/40 flex items-center justify-between gap-2">
+                        <span class="font-mono font-bold text-cyber-neonPink text-sm">${money(p.price)}</span>
+                        <span class="text-[11px] font-mono px-2 py-1 rounded ${p.stock > 0 ? 'text-green-400 bg-green-400/10 border border-green-400/30' : 'text-red-400 bg-red-400/10 border border-red-400/30'}">${p.stock > 0 ? 'Stock: ' + p.stock : 'Agotado'}</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        /* ---------------- Recargas (usuario) ---------------- */
+        function setPresetAmount(a) { document.getElementById('topup-amount').value = a; }
+
+        async function submitTopupRequest(e) {
+            e.preventDefault();
+            if (!isApproved()) return showToast('Tu cuenta no está aprobada', 'error');
+            const amount = Math.round(parseFloat(document.getElementById('topup-amount').value) * 100) / 100;
+            if (!(amount > 0) || amount > 99999999) return showToast('Monto no válido', 'error');
+            setBusy('topup-submit-btn', true, 'Enviando...');
+            const { error } = await sb.from('topup_requests').insert({ user_id: S.session.user.id, amount });
+            setBusy('topup-submit-btn', false);
+            if (error) return showToast('No se pudo enviar: ' + errMsg(error), 'error');
+            showToast(`Solicitud de ${money(amount)} enviada. La administradora la revisará.`, 'success');
+            loadMyRequests();
+        }
+
+        async function loadMyRequests() {
+            if (!sb || !isApproved()) return;
+            const { data } = await sb.from('topup_requests').select('*').eq('user_id', S.session.user.id).order('created_at', { ascending: false }).limit(10);
+            const box = document.getElementById('recarga-my-requests');
+            box.innerHTML = (data && data.length) ? data.map(r => `
+                <div class="flex justify-between items-center p-2 bg-cyber-dark rounded-lg border border-cyber-border/50">
+                    <span class="text-gray-400">${esc(fdate(r.created_at))}</span>
+                    <span class="text-white font-bold">${money(r.amount)}</span>${badge(r.status)}</div>`).join('')
+                : '<p class="text-gray-500">Aún no tienes solicitudes.</p>';
+        }
+
+        async function loadMyLedger() {
+            if (!sb || !S.session) return;
+            await loadProfile(); updateHeader(); renderGates();
+            const { data } = await sb.from('balance_ledger').select('*').eq('user_id', S.session.user.id).order('created_at', { ascending: false }).limit(30);
+            const box = document.getElementById('my-ledger');
+            box.innerHTML = (data && data.length) ? data.map(m => `
+                <div class="flex justify-between items-center p-2 bg-cyber-dark rounded-lg border border-cyber-border/50">
+                    <div><span class="text-white">${esc(TYPE_LABEL[m.type] || m.type)}</span><span class="text-gray-500 block text-[10px]">${esc(fdate(m.created_at))}</span></div>
+                    <span class="font-bold ${m.amount > 0 ? 'text-green-400' : 'text-red-400'}">${m.amount > 0 ? '+' : ''}${money(m.amount)}</span></div>`).join('')
+                : '<p class="text-gray-500">Aún no tienes movimientos.</p>';
+        }
+
+        /* ---------------- Panel admin ---------------- */
+        async function loadAdmin() {
+            if (!isAdmin()) return;
+            const [pr, tp, lg, pd] = await Promise.all([
+                sb.from('profiles').select('*').order('created_at', { ascending: false }),
+                sb.from('topup_requests').select('*').eq('status', 'pending').order('created_at', { ascending: true }),
+                sb.from('balance_ledger').select('*').order('created_at', { ascending: false }).limit(60),
+                sb.from('products').select('*').order('category').order('name')
+            ]);
+            for (const r of [pr, tp, lg, pd]) if (r.error) showToast('Error al cargar: ' + errMsg(r.error), 'error');
+            S.adminProfiles = pr.data || []; S.adminTopups = tp.data || [];
+            S.adminLedger = lg.data || []; S.adminProducts = pd.data || [];
+            renderAdminUsers(); renderAdminTopups(); renderAdminSelects(); renderAdminCards(); renderAdminProducts(); renderAdminLedger();
+        }
+        const pname = id => { const p = S.adminProfiles.find(x => x.id === id); return p ? p.full_name : '(desconocido)'; };
+
+        function renderAdminUsers() {
+            const order = { pending: 0, approved: 1, rejected: 2 };
+            const list = [...S.adminProfiles].sort((a, b) => order[a.status] - order[b.status]);
+            document.getElementById('cnt-users').textContent = S.adminProfiles.filter(p => p.status === 'pending').length;
+            document.getElementById('admin-users-table').innerHTML = list.map(p => {
+                const me = p.id === S.session.user.id;
+                const btn = (st, label, cls) => p.status === st ? '' : `<button onclick="setUserStatus('${p.id}','${st}')" class="px-2 py-1 rounded-lg border text-[11px] ${cls}">${label}</button>`;
+                return `<tr class="hover:bg-cyber-dark/40">
+                    <td class="p-3 text-white font-bold">${esc(p.full_name)}${p.role === 'admin' ? ' <span class="text-cyber-neonPink">(admin)</span>' : ''}</td>
+                    <td class="p-3">${esc(p.ci)}</td><td class="p-3">${esc(p.phone)}</td><td class="p-3 text-gray-400">${esc(p.email)}</td>
+                    <td class="p-3">${badge(p.status)}</td><td class="p-3 text-cyber-neonPink">${money(p.balance)}</td>
+                    <td class="p-3 text-center space-x-1">${me ? '<span class="text-gray-500">tú</span>' :
+                        btn('approved', 'Aprobar', 'bg-green-500/20 text-green-400 border-green-500/40') +
+                        btn('rejected', 'Rechazar', 'bg-red-500/20 text-red-400 border-red-500/40') +
+                        btn('pending', 'Pendiente', 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40')}</td></tr>`;
+            }).join('') || '<tr><td colspan="7" class="p-4 text-gray-500">Sin usuarios.</td></tr>';
+        }
+
+        async function setUserStatus(id, status) {
+            const { error } = await sb.rpc('admin_set_user_status', { p_user_id: id, p_status: status });
+            if (error) return showToast(errMsg(error), 'error');
+            showToast('Estado actualizado', 'success'); loadAdmin();
+        }
+
+        function renderAdminTopups() {
+            document.getElementById('cnt-topups').textContent = S.adminTopups.length;
+            document.getElementById('admin-topup-table').innerHTML = S.adminTopups.map(t => {
+                const p = S.adminProfiles.find(x => x.id === t.user_id);
+                return `<tr class="hover:bg-cyber-dark/40">
+                    <td class="p-3 text-white font-bold">${esc(p ? p.full_name : '(desconocido)')}</td>
+                    <td class="p-3">${esc(p ? p.ci : '')}</td>
+                    <td class="p-3 text-cyber-neonPink font-bold">${money(t.amount)}</td>
+                    <td class="p-3 text-gray-400">${esc(fdate(t.created_at))}</td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="reviewTopup(${Number(t.id)}, true)" class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/40 rounded-lg hover:bg-green-500 hover:text-black">Aprobar</button>
+                        <button onclick="reviewTopup(${Number(t.id)}, false)" class="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded-lg hover:bg-red-500 hover:text-white">Rechazar</button></td></tr>`;
+            }).join('') || '<tr><td colspan="5" class="p-4 text-gray-500">No hay solicitudes pendientes.</td></tr>';
+        }
+
+        async function reviewTopup(id, approve) {
+            const t = S.adminTopups.find(x => x.id === id); if (!t) return;
+            const msg = approve ? `¿Verificaste en tu banca móvil el depósito de ${money(t.amount)} de ${pname(t.user_id)}? Se acreditará ese monto.` : `¿Rechazar la solicitud de ${money(t.amount)} de ${pname(t.user_id)}?`;
+            if (!confirm(msg)) return;
+            const { error } = await sb.rpc('admin_review_topup', { p_request_id: id, p_approve: approve });
+            if (error) return showToast(errMsg(error), 'error');
+            showToast(approve ? 'Recarga aprobada y acreditada' : 'Solicitud rechazada', 'success'); loadAdmin();
+        }
+
+        function renderAdminSelects() {
+            const opts = S.adminProfiles.filter(p => p.status === 'approved')
+                .map(p => `<option value="${p.id}">${esc(p.full_name)} - C.I. ${esc(p.ci)}</option>`).join('');
+            const html = opts || '<option value="">No hay cuentas aprobadas</option>';
+            document.getElementById('cash-user').innerHTML = html;
+            document.getElementById('nfc-user').innerHTML = html;
+        }
+
+        async function submitCashTopup(e) {
+            e.preventDefault();
+            const uid = document.getElementById('cash-user').value;
+            const amount = Math.round(parseFloat(document.getElementById('cash-amount').value) * 100) / 100;
+            const note = document.getElementById('cash-note').value.trim();
+            if (!uid) return showToast('Elige una persona', 'error');
+            if (!(amount > 0)) return showToast('Monto no válido', 'error');
+            if (!confirm(`¿Acreditar ${money(amount)} en efectivo a ${pname(uid)}?`)) return;
+            setBusy('cash-btn', true, 'Acreditando...');
+            const { error } = await sb.rpc('admin_cash_topup', { p_user_id: uid, p_amount: amount, p_note: note || null });
+            setBusy('cash-btn', false);
+            if (error) return showToast(errMsg(error), 'error');
+            document.getElementById('cash-amount').value = ''; document.getElementById('cash-note').value = '';
+            showToast('Saldo acreditado', 'success'); loadAdmin();
+        }
+
+        async function submitNfcLink(e) {
+            e.preventDefault();
+            const uid = document.getElementById('nfc-user').value;
+            const nfc = document.getElementById('nfc-uid').value.trim();
+            if (!uid || !nfc) return showToast('Completa los datos', 'error');
+            setBusy('nfc-btn', true, 'Guardando...');
+            const { error } = await sb.rpc('admin_assign_nfc', { p_user_id: uid, p_nfc_uid: nfc });
+            setBusy('nfc-btn', false);
+            if (error) return showToast(errMsg(error), 'error');
+            document.getElementById('nfc-uid').value = '';
+            showToast('Tarjeta vinculada', 'success'); loadAdmin();
+        }
+
+        function renderAdminCards() {
+            const list = S.adminProfiles.filter(p => p.nfc_uid);
+            document.getElementById('admin-linked-cards-list').innerHTML = list.map(p => `
+                <div class="p-2.5 bg-cyber-dark rounded-xl border border-cyber-border/60 flex justify-between items-center">
+                    <div><span class="text-white font-bold block">${esc(p.full_name)}</span><span class="text-cyber-neonCyan">UID: ${esc(p.nfc_uid)}</span></div>
+                    <span class="text-cyber-neonPink">${money(p.balance)}</span></div>`).join('') || '<p class="text-gray-500">Aún no hay tarjetas vinculadas.</p>';
+        }
+
+        function renderAdminLedger() {
+            document.getElementById('admin-ledger-table').innerHTML = S.adminLedger.map(m => `
+                <tr class="hover:bg-cyber-dark/40">
+                    <td class="p-3 text-gray-400">${esc(fdate(m.created_at))}</td><td class="p-3 text-white">${esc(pname(m.user_id))}</td>
+                    <td class="p-3">${esc(TYPE_LABEL[m.type] || m.type)}</td>
+                    <td class="p-3 font-bold ${m.amount > 0 ? 'text-green-400' : 'text-red-400'}">${m.amount > 0 ? '+' : ''}${money(m.amount)}</td>
+                    <td class="p-3 text-gray-400">${esc(m.created_by ? pname(m.created_by) : '-')}</td><td class="p-3 text-gray-400">${esc(m.note || '')}</td></tr>`).join('')
+                || '<tr><td colspan="6" class="p-4 text-gray-500">Sin movimientos.</td></tr>';
+        }
+
+        /* ---------------- Inventario (admin) ---------------- */
+        function renderAdminProducts() {
+            document.getElementById('cat-list').innerHTML = [...new Set(S.adminProducts.map(p => p.category).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+            document.getElementById('admin-product-table').innerHTML = S.adminProducts.map(p => `
+                <tr class="hover:bg-cyber-dark/40">
+                    <td class="p-3">${imgOrIcon(p.image_url, 'w-10 h-10 object-cover rounded-lg border border-cyber-border')}</td>
+                    <td class="p-3 text-white">${esc(p.name)}</td><td class="p-3 text-gray-400">${esc(p.category || '')}</td>
+                    <td class="p-3 text-cyber-neonPink font-bold">${money(p.price)}</td><td class="p-3 font-bold">${p.stock} pcs</td>
+                    <td class="p-3">${p.active ? '<span class="text-green-400">Sí</span>' : '<span class="text-gray-500">No</span>'}</td>
+                    <td class="p-3 text-center"><button onclick="editProductModal(${Number(p.id)})" class="px-2.5 py-1 bg-cyber-neonCyan/20 text-cyber-neonCyan border border-cyber-neonCyan/40 rounded-lg text-xs hover:bg-cyber-neonCyan hover:text-cyber-dark"><i class="fa-solid fa-pen-to-square"></i> Editar</button></td></tr>`).join('')
+                || '<tr><td colspan="7" class="p-4 text-gray-500">Aún no hay componentes. Crea el primero con "Nuevo Componente".</td></tr>';
+        }
+
+        function openProductModal() {
+            ['id', 'name', 'desc', 'category', 'price', 'stock', 'img'].forEach(k => document.getElementById('prod-edit-' + k).value = '');
+            document.getElementById('prod-edit-active').checked = true;
+            document.getElementById('product-modal-title').textContent = 'Nuevo Componente';
+            const m = document.getElementById('product-modal'); m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function editProductModal(id) {
+            const p = S.adminProducts.find(x => x.id === id); if (!p) return;
+            document.getElementById('prod-edit-id').value = p.id;
+            document.getElementById('prod-edit-name').value = p.name;
+            document.getElementById('prod-edit-desc').value = p.description || '';
+            document.getElementById('prod-edit-category').value = p.category || '';
+            document.getElementById('prod-edit-price').value = p.price;
+            document.getElementById('prod-edit-stock').value = p.stock;
+            document.getElementById('prod-edit-img').value = p.image_url || '';
+            document.getElementById('prod-edit-active').checked = p.active;
+            document.getElementById('product-modal-title').textContent = 'Editar Componente';
+            const m = document.getElementById('product-modal'); m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeProductModal() { const m = document.getElementById('product-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('prod-edit-id').value;
+            const img = document.getElementById('prod-edit-img').value.trim();
+            const row = {
+                name: document.getElementById('prod-edit-name').value.trim(),
+                description: document.getElementById('prod-edit-desc').value.trim() || null,
+                category: document.getElementById('prod-edit-category').value.trim(),
+                price: Math.round(parseFloat(document.getElementById('prod-edit-price').value) * 100) / 100,
+                stock: parseInt(document.getElementById('prod-edit-stock').value, 10),
+                image_url: img || null,
+                active: document.getElementById('prod-edit-active').checked
+            };
+            if (!row.name || !row.category) return showToast('Nombre y categoría son obligatorios', 'error');
+            if (!(row.price >= 0) || !(row.stock >= 0)) return showToast('Precio y stock no válidos', 'error');
+            if (img && !safeImg(img)) return showToast('La imagen debe ser img/archivo.png o un enlace https://', 'error');
+            setBusy('prod-save-btn', true, 'Guardando...');
+            const { error } = id ? await sb.from('products').update(row).eq('id', id) : await sb.from('products').insert(row);
+            setBusy('prod-save-btn', false);
+            if (error) return showToast('No se pudo guardar: ' + errMsg(error), 'error');
+            closeProductModal(); showToast('Componente guardado', 'success');
+            loadAdmin(); loadProducts();
+        }
+    </script>
+</body>
+</html>
