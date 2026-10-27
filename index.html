@@ -101,6 +101,10 @@
             </nav>
 
             <div class="flex items-center gap-3">
+                <button id="cart-btn" onclick="switchTab('tab-carrito')" title="Mi carrito" class="hidden relative px-3 py-2 rounded-xl bg-cyber-card border border-cyber-neonCyan/40 text-cyber-neonCyan hover:bg-cyber-neonCyan hover:text-cyber-dark transition-all">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="cart-count" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-cyber-neonPink text-white text-[10px] font-bold flex items-center justify-center">0</span>
+                </button>
                 <div id="header-balance-badge" class="hidden cyber-glass-pink px-3 py-1.5 rounded-xl flex items-center gap-2 border border-cyber-neonPink/30 glow-pink">
                     <i class="fa-solid fa-wifi text-cyber-neonPink animate-pulse text-xs"></i>
                     <div class="text-xs">
@@ -197,6 +201,24 @@
                 </div>
             </div>
             <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </div>
+
+        <!-- CARRITO -->
+        <div id="tab-carrito" class="tab-pane max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+            <div class="text-center max-w-2xl mx-auto">
+                <span class="text-cyber-neonCyan font-mono text-xs uppercase tracking-widest block mb-1"><i class="fa-solid fa-cart-shopping"></i> Tu pedido</span>
+                <h2 class="text-3xl font-black font-orbitron text-white">Mi Carrito</h2>
+                <p class="text-gray-400 text-xs sm:text-sm mt-2">Arma tu pedido y acéptalo para cargarlo a tu tarjeta NFC. Luego solo acércala a la máquina.</p>
+            </div>
+            <div id="carrito-gate" class="max-w-xl mx-auto"></div>
+            <div id="carrito-content" class="hidden space-y-8">
+                <div id="pending-order-box"></div>
+                <div id="cart-box" class="cyber-glass p-6 rounded-2xl border border-cyber-neonCyan/30"></div>
+                <div class="cyber-glass p-5 rounded-2xl border border-cyber-border/60">
+                    <h4 class="text-sm font-bold text-white mb-3">Mis pedidos recientes</h4>
+                    <div id="my-orders" class="space-y-2 text-xs font-mono"></div>
+                </div>
+            </div>
         </div>
 
         <!-- RECARGA -->
@@ -334,6 +356,7 @@
                 <button onclick="switchAdminTab('nfc')" data-sub="nfc" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-wifi mr-2"></i>Tarjetas NFC</button>
                 <button onclick="switchAdminTab('products')" data-sub="products" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-boxes-stacked mr-2"></i>Inventario</button>
                 <button onclick="switchAdminTab('ledger')" data-sub="ledger" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-list mr-2"></i>Movimientos</button>
+                <button onclick="switchAdminTab('orders')" data-sub="orders" class="admin-tab-btn px-5 py-3 font-orbitron text-xs font-bold border-b-2 whitespace-nowrap"><i class="fa-solid fa-cart-flatbed mr-2"></i>Pedidos</button>
             </div>
 
             <!-- Usuarios -->
@@ -399,8 +422,19 @@
                 </div>
                 <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
                     <table class="w-full text-left text-xs font-mono">
-                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Foto</th><th class="p-3">Nombre</th><th class="p-3">Categoría</th><th class="p-3">Precio</th><th class="p-3">Stock</th><th class="p-3">Visible</th><th class="p-3 text-center">Acciones</th></tr></thead>
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Foto</th><th class="p-3">Nombre</th><th class="p-3">Categoría</th><th class="p-3">Motor</th><th class="p-3">Precio</th><th class="p-3">Stock</th><th class="p-3">Visible</th><th class="p-3 text-center">Acciones</th></tr></thead>
                         <tbody id="admin-product-table" class="divide-y divide-cyber-border/40"></tbody>
+                    </table>
+                </div></div>
+            </div>
+
+            <!-- Pedidos -->
+            <div id="admin-sub-orders" class="admin-sub-pane hidden space-y-4">
+                <h3 class="text-lg font-bold text-white">Últimos pedidos</h3>
+                <div class="cyber-glass rounded-xl overflow-hidden border border-cyber-border/60"><div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-cyber-dark text-gray-400 uppercase border-b border-cyber-border/60"><tr><th class="p-3">Fecha</th><th class="p-3">Persona</th><th class="p-3">Detalle (motor)</th><th class="p-3">Total</th><th class="p-3">Estado</th></tr></thead>
+                        <tbody id="admin-orders-table" class="divide-y divide-cyber-border/40"></tbody>
                     </table>
                 </div></div>
             </div>
@@ -433,6 +467,8 @@
                     <div><label class="block text-gray-300 mb-1">Stock</label><input type="number" step="1" min="0" max="100000" id="prod-edit-stock" required class="inp"></div>
                 </div>
                 <div><label class="block text-gray-300 mb-1">Imagen (opcional): ruta como img/esp32.png o enlace https://...</label><input type="text" id="prod-edit-img" maxlength="500" class="inp"></div>
+                <div><label class="block text-gray-300 mb-1">Motor que entrega este componente (1 al 6)</label>
+                    <select id="prod-edit-slot" class="inp"><option value="">Sin motor asignado</option><option value="1">Motor 1</option><option value="2">Motor 2</option><option value="3">Motor 3</option><option value="4">Motor 4</option><option value="5">Motor 5</option><option value="6">Motor 6</option></select></div>
                 <label class="flex items-center gap-2 text-gray-300"><input type="checkbox" id="prod-edit-active" checked> Visible en el catálogo</label>
                 <button id="prod-save-btn" type="submit" class="w-full py-3 bg-cyber-neonCyan text-cyber-dark font-orbitron font-bold rounded-xl text-xs hover:brightness-110 mt-2">Guardar</button>
             </form>
@@ -462,7 +498,8 @@
         const S = {
             session: null, profile: null,
             products: [], category: 'all',
-            adminProfiles: [], adminTopups: [], adminLedger: [], adminProducts: []
+            adminProfiles: [], adminTopups: [], adminLedger: [], adminProducts: [],
+            cart: {}, myOrder: null, myOrderItems: [], myOrders: []
         };
 
         /* ---------------- Utilidades ---------------- */
@@ -492,7 +529,11 @@
         }
         function errMsg(e) {
             const m = (e && e.message) || 'Error desconocido';
-            if (e && e.code === '23505') return 'Ese UID ya está asignado a otra persona';
+            if (e && e.code === '23505') {
+                if (/slot/i.test(m)) return 'Ese motor ya está asignado a otro producto';
+                if (/pending/i.test(m)) return 'Ya tienes un pedido pendiente';
+                return 'Ese UID ya está asignado a otra persona';
+            }
             return m;
         }
         function setBusy(id, busy, label) {
@@ -562,6 +603,7 @@
             if (id === 'tab-recarga') { renderGates(); loadMyRequests(); }
             if (id === 'tab-cuenta') { renderGates(); loadMyLedger(); }
             if (id === 'tab-admin') loadAdmin();
+            if (id === 'tab-carrito') { renderCartGate(); loadProducts().then(loadMyOrders); }
         }
 
         function switchAuthSubTab(mode) {
@@ -633,6 +675,7 @@
 
         async function handleLogout() {
             await sb.auth.signOut();
+            S.cart = {}; S.myOrder = null; S.myOrderItems = []; S.myOrders = [];
             S.profile = null; S.session = null;
             updateHeader(); renderGates();
             switchTab('tab-inicio');
@@ -648,6 +691,8 @@
             const auth = document.getElementById('auth-header-container');
             const badgeEl = document.getElementById('header-balance-badge');
             document.querySelectorAll('.admin-only').forEach(b => b.classList.toggle('hidden', !isAdmin()));
+            document.getElementById('cart-btn').classList.toggle('hidden', !isApproved());
+            updateCartBadge();
             if (S.session && S.profile) {
                 badgeEl.classList.toggle('hidden', !isApproved());
                 document.getElementById('user-balance-display').textContent = money(S.profile.balance);
@@ -672,6 +717,7 @@
             const rg = document.getElementById('recarga-gate'), rc = document.getElementById('recarga-content');
             const cg = document.getElementById('cuenta-gate'), cc = document.getElementById('cuenta-content');
             let gate = null;
+            setTimeout(renderCartGate, 0);
             if (!S.session || !S.profile) gate = gateBox('fa-lock', 'Inicia sesión', 'Necesitas una cuenta para continuar.', loginBtn);
             else if (S.profile.status === 'pending') gate = gateBox('fa-hourglass-half', 'Cuenta pendiente de aprobación', 'La administradora aún no aprobó tu cuenta. Cuando lo haga podrás recargar saldo y usar tu tarjeta.');
             else if (S.profile.status === 'rejected') gate = gateBox('fa-ban', 'Cuenta rechazada', 'Tu cuenta no fue aprobada. Contacta a la administradora.');
@@ -739,6 +785,7 @@
                         <span class="font-mono font-bold text-cyber-neonPink text-sm">${money(p.price)}</span>
                         <span class="text-[11px] font-mono px-2 py-1 rounded ${p.stock > 0 ? 'text-green-400 bg-green-400/10 border border-green-400/30' : 'text-red-400 bg-red-400/10 border border-red-400/30'}">${p.stock > 0 ? 'Stock: ' + p.stock : 'Agotado'}</span>
                     </div>
+                    ${cartControls(p)}
                 </div>`).join('');
         }
 
@@ -793,7 +840,7 @@
             for (const r of [pr, tp, lg, pd]) if (r.error) showToast('Error al cargar: ' + errMsg(r.error), 'error');
             S.adminProfiles = pr.data || []; S.adminTopups = tp.data || [];
             S.adminLedger = lg.data || []; S.adminProducts = pd.data || [];
-            renderAdminUsers(); renderAdminTopups(); renderAdminSelects(); renderAdminCards(); renderAdminProducts(); renderAdminLedger();
+            renderAdminUsers(); renderAdminTopups(); renderAdminSelects(); renderAdminCards(); renderAdminProducts(); renderAdminLedger(); loadAdminOrders();
         }
         const pname = id => { const p = S.adminProfiles.find(x => x.id === id); return p ? p.full_name : '(desconocido)'; };
 
@@ -907,14 +954,15 @@
                 <tr class="hover:bg-cyber-dark/40">
                     <td class="p-3">${imgOrIcon(p.image_url, 'w-10 h-10 object-cover rounded-lg border border-cyber-border')}</td>
                     <td class="p-3 text-white">${esc(p.name)}</td><td class="p-3 text-gray-400">${esc(p.category || '')}</td>
+                    <td class="p-3">${p.slot ? '<span class="text-cyber-neonCyan font-bold">Motor ' + Number(p.slot) + '</span>' : '<span class="text-yellow-300">Sin motor</span>'}</td>
                     <td class="p-3 text-cyber-neonPink font-bold">${money(p.price)}</td><td class="p-3 font-bold">${p.stock} pcs</td>
                     <td class="p-3">${p.active ? '<span class="text-green-400">Sí</span>' : '<span class="text-gray-500">No</span>'}</td>
                     <td class="p-3 text-center"><button onclick="editProductModal(${Number(p.id)})" class="px-2.5 py-1 bg-cyber-neonCyan/20 text-cyber-neonCyan border border-cyber-neonCyan/40 rounded-lg text-xs hover:bg-cyber-neonCyan hover:text-cyber-dark"><i class="fa-solid fa-pen-to-square"></i> Editar</button></td></tr>`).join('')
-                || '<tr><td colspan="7" class="p-4 text-gray-500">Aún no hay componentes. Crea el primero con "Nuevo Componente".</td></tr>';
+                || '<tr><td colspan="8" class="p-4 text-gray-500">Aún no hay componentes. Crea el primero con "Nuevo Componente".</td></tr>';
         }
 
         function openProductModal() {
-            ['id', 'name', 'desc', 'category', 'price', 'stock', 'img'].forEach(k => document.getElementById('prod-edit-' + k).value = '');
+            ['id', 'name', 'desc', 'category', 'price', 'stock', 'img', 'slot'].forEach(k => document.getElementById('prod-edit-' + k).value = '');
             document.getElementById('prod-edit-active').checked = true;
             document.getElementById('product-modal-title').textContent = 'Nuevo Componente';
             const m = document.getElementById('product-modal'); m.classList.remove('hidden'); m.classList.add('flex');
@@ -927,6 +975,7 @@
             document.getElementById('prod-edit-category').value = p.category || '';
             document.getElementById('prod-edit-price').value = p.price;
             document.getElementById('prod-edit-stock').value = p.stock;
+            document.getElementById('prod-edit-slot').value = p.slot ?? '';
             document.getElementById('prod-edit-img').value = p.image_url || '';
             document.getElementById('prod-edit-active').checked = p.active;
             document.getElementById('product-modal-title').textContent = 'Editar Componente';
@@ -945,6 +994,7 @@
                 price: Math.round(parseFloat(document.getElementById('prod-edit-price').value) * 100) / 100,
                 stock: parseInt(document.getElementById('prod-edit-stock').value, 10),
                 image_url: img || null,
+                slot: document.getElementById('prod-edit-slot').value ? parseInt(document.getElementById('prod-edit-slot').value, 10) : null,
                 active: document.getElementById('prod-edit-active').checked
             };
             if (!row.name || !row.category) return showToast('Nombre y categoría son obligatorios', 'error');
@@ -956,6 +1006,194 @@
             if (error) return showToast('No se pudo guardar: ' + errMsg(error), 'error');
             closeProductModal(); showToast('Componente guardado', 'success');
             loadAdmin(); loadProducts();
+        }
+
+        /* ---------------- Carrito y pedidos ---------------- */
+        const ORDER_LABEL = { pending: 'Pendiente de retiro', completed: 'Entregado', cancelled: 'Cancelado' };
+        const ORDER_CLASS = { pending: STATUS_CLASS.pending, completed: STATUS_CLASS.approved, cancelled: STATUS_CLASS.rejected };
+        const orderBadge = s => `<span class="px-2 py-0.5 rounded border text-[10px] ${ORDER_CLASS[s] || ''}">${esc(ORDER_LABEL[s] || s)}</span>`;
+        const prodName = (id, list) => { const p = (list || S.products).find(x => x.id === id); return p ? p.name : 'Producto #' + id; };
+
+        function cartEntries() {
+            const out = [];
+            for (const k of Object.keys(S.cart)) {
+                const p = S.products.find(x => String(x.id) === k);
+                if (!p || !p.slot || p.stock <= 0) { delete S.cart[k]; continue; }
+                const qty = Math.min(Number(S.cart[k]), p.stock);
+                if (!(qty > 0)) { delete S.cart[k]; continue; }
+                S.cart[k] = qty; out.push({ p, qty });
+            }
+            return out;
+        }
+        const cartTotal = entries => Math.round(entries.reduce((a, e) => a + Number(e.p.price) * e.qty, 0) * 100) / 100;
+
+        function updateCartBadge() {
+            const n = Object.values(S.cart).reduce((a, q) => a + Number(q), 0);
+            const el = document.getElementById('cart-count'); if (!el) return;
+            el.textContent = n; el.classList.toggle('hidden', n === 0);
+        }
+
+        function cartControls(p) {
+            if (p.stock <= 0) return '';
+            if (!p.slot) return '<p class="text-[11px] text-yellow-300/80 font-mono mt-3">No disponible en la máquina por ahora</p>';
+            const q = S.cart[p.id] || 0;
+            if (q > 0) return `<div class="mt-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 font-mono">
+                    <button onclick="cartSet(${p.id}, ${q - 1})" class="w-8 h-8 rounded-lg bg-cyber-dark border border-cyber-border text-white hover:border-cyber-neonCyan">−</button>
+                    <span class="w-6 text-center text-white font-bold">${q}</span>
+                    <button onclick="cartSet(${p.id}, ${q + 1})" class="w-8 h-8 rounded-lg bg-cyber-dark border border-cyber-border text-white hover:border-cyber-neonCyan">+</button>
+                </div><span class="text-[10px] text-cyber-neonCyan font-mono">en tu carrito</span></div>`;
+            return `<button onclick="cartAdd(${p.id})" class="mt-3 w-full py-2 rounded-xl text-xs font-bold font-orbitron bg-cyber-neonCyan text-cyber-dark hover:brightness-110"><i class="fa-solid fa-cart-plus mr-1"></i> Agregar al carrito</button>`;
+        }
+
+        function cartAdd(id) {
+            if (!S.session || !S.profile) { showToast('Inicia sesión para usar el carrito', 'error'); return switchTab('tab-auth'); }
+            if (!isApproved()) return showToast('Tu cuenta aún no está aprobada', 'error');
+            cartSet(id, (S.cart[id] || 0) + 1);
+        }
+        function cartSet(id, qty) {
+            const p = S.products.find(x => x.id === id); if (!p) return;
+            qty = Math.floor(Number(qty));
+            if (!(qty > 0)) delete S.cart[id];
+            else {
+                if (qty > p.stock) { showToast('Solo hay ' + p.stock + ' en stock', 'info'); qty = p.stock; }
+                S.cart[id] = qty;
+            }
+            renderCatalog(); renderCart();
+        }
+        function cartClear() {
+            if (!cartEntries().length) return;
+            if (!confirm('¿Cancelar y vaciar todo el carrito?')) return;
+            S.cart = {}; renderCatalog(); renderCart();
+            showToast('Carrito vaciado', 'info');
+        }
+
+        function renderCartGate() {
+            const g = document.getElementById('carrito-gate'), c = document.getElementById('carrito-content');
+            if (!g || !c) return;
+            let gate = null;
+            if (!S.session || !S.profile) gate = gateBox('fa-lock', 'Inicia sesión', 'Necesitas una cuenta para armar tu carrito.', loginBtn);
+            else if (S.profile.status !== 'approved') gate = gateBox('fa-hourglass-half', 'Cuenta no aprobada', 'Podrás usar el carrito cuando la administradora apruebe tu cuenta.');
+            g.innerHTML = gate || ''; c.classList.toggle('hidden', !!gate);
+            if (!gate) renderCart();
+        }
+
+        async function loadMyOrders() {
+            if (!sb || !isApproved()) return;
+            const { data, error } = await sb.from('orders').select('*').eq('user_id', S.session.user.id).order('created_at', { ascending: false }).limit(10);
+            if (error) return showToast('No se pudieron cargar tus pedidos: ' + errMsg(error), 'error');
+            S.myOrders = data || [];
+            S.myOrder = S.myOrders.find(o => o.status === 'pending') || null;
+            S.myOrderItems = [];
+            if (S.myOrder) {
+                const r = await sb.from('order_items').select('*').eq('order_id', S.myOrder.id).order('slot');
+                S.myOrderItems = r.data || [];
+            }
+            await loadProfile(); updateHeader();
+            renderCart();
+        }
+
+        function renderCart() {
+            updateCartBadge();
+            const box = document.getElementById('cart-box'); if (!box) return;
+            const entries = cartEntries();
+            const total = cartTotal(entries);
+            const bal = S.profile ? Number(S.profile.balance) : 0;
+
+            // Pedido pendiente (ya aceptado, esperando la tarjeta)
+            const pend = document.getElementById('pending-order-box');
+            if (S.myOrder) {
+                pend.innerHTML = `<div class="cyber-glass p-6 rounded-2xl border border-yellow-400/40 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="font-orbitron font-bold text-white"><i class="fa-solid fa-wifi text-yellow-300 mr-2"></i>Pedido #${Number(S.myOrder.id)} cargado a tu tarjeta</h3>${orderBadge('pending')}</div>
+                    <div class="space-y-1 text-xs font-mono">${S.myOrderItems.map(i => `<div class="flex justify-between p-2 bg-cyber-dark rounded-lg"><span class="text-white">${Number(i.quantity)} × ${esc(prodName(i.product_id))} <span class="text-gray-500">(Motor ${Number(i.slot)})</span></span><span class="text-cyber-neonPink">${money(Number(i.unit_price) * Number(i.quantity))}</span></div>`).join('')}</div>
+                    <div class="flex justify-between font-mono"><span class="text-gray-400">Total a pagar al retirar</span><span class="text-cyber-neonPink font-bold">${money(S.myOrder.total)}</span></div>
+                    <p class="text-xs text-gray-300">Acerca tu tarjeta NFC al lector de la máquina para retirarlo. El saldo se descuenta recién cuando la máquina entrega.</p>
+                    <button onclick="cancelMyOrder(${Number(S.myOrder.id)})" class="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white">Cancelar este pedido</button></div>`;
+            } else pend.innerHTML = '';
+
+            // Carrito
+            if (!entries.length) {
+                box.innerHTML = `<div class="text-center space-y-3 py-6"><i class="fa-solid fa-cart-shopping text-3xl text-gray-500"></i>
+                    <p class="text-sm text-gray-300">Tu carrito está vacío.</p>
+                    <button onclick="switchTab('tab-catalogo')" class="px-5 py-2.5 rounded-xl text-xs font-bold font-orbitron bg-cyber-neonCyan text-cyber-dark">Ir al catálogo</button></div>`;
+            } else {
+                const rows = entries.map(({ p, qty }) => `
+                    <div class="flex flex-wrap items-center gap-3 p-3 bg-cyber-dark rounded-xl border border-cyber-border/60">
+                        <div class="w-12 h-12 shrink-0">${imgOrIcon(p.image_url, 'w-12 h-12 object-cover rounded-lg border border-cyber-border')}</div>
+                        <div class="flex-1 min-w-[140px]"><span class="text-white font-bold text-sm block">${esc(p.name)}</span><span class="text-[10px] text-gray-400 font-mono">Motor ${Number(p.slot)} · ${money(p.price)} c/u · stock ${p.stock}</span></div>
+                        <div class="flex items-center gap-2 font-mono">
+                            <button onclick="cartSet(${p.id}, ${qty - 1})" class="w-8 h-8 rounded-lg bg-cyber-card border border-cyber-border text-white hover:border-cyber-neonCyan">−</button>
+                            <span class="w-6 text-center text-white font-bold">${qty}</span>
+                            <button onclick="cartSet(${p.id}, ${qty + 1})" class="w-8 h-8 rounded-lg bg-cyber-card border border-cyber-border text-white hover:border-cyber-neonCyan">+</button>
+                        </div>
+                        <span class="w-24 text-right text-cyber-neonPink font-bold font-mono text-sm">${money(Number(p.price) * qty)}</span>
+                        <button onclick="cartSet(${p.id}, 0)" title="Quitar del carrito" class="px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>`).join('');
+                const warns = [];
+                if (S.myOrder) warns.push('Ya tienes un pedido pendiente. Retíralo o cancélalo antes de aceptar otro.');
+                if (total > bal) warns.push(`Tu saldo (${money(bal)}) no alcanza para este total. Recarga saldo primero.`);
+                if (!S.profile.nfc_uid) warns.push('Aún no tienes una tarjeta NFC vinculada. Pide a la administradora que la vincule para poder retirar.');
+                const blocked = !!S.myOrder || total > bal;
+                box.innerHTML = `<h3 class="font-orbitron font-bold text-white mb-4">Productos seleccionados</h3>
+                    <div class="space-y-3">${rows}</div>
+                    <div class="mt-5 pt-4 border-t border-cyber-border/50 space-y-1 font-mono text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Total</span><span class="text-cyber-neonPink font-black text-lg">${money(total)}</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-gray-400">Tu saldo</span><span class="text-cyber-neonCyan">${money(bal)}</span></div>
+                    </div>
+                    ${warns.map(w => `<p class="mt-3 text-[11px] text-yellow-300/90">${esc(w)}</p>`).join('')}
+                    <div class="mt-5 grid sm:grid-cols-2 gap-3">
+                        <button id="place-order-btn" onclick="placeOrder()" ${blocked ? 'disabled' : ''} class="py-3 rounded-xl font-orbitron font-bold text-sm bg-green-500 text-black hover:brightness-110 ${blocked ? 'opacity-40 cursor-not-allowed' : ''}"><i class="fa-solid fa-check mr-1"></i> Aceptar y cargar a mi tarjeta</button>
+                        <button onclick="cartClear()" class="py-3 rounded-xl font-orbitron font-bold text-sm bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white"><i class="fa-solid fa-xmark mr-1"></i> Cancelar</button>
+                    </div>
+                    <p class="mt-3 text-[11px] text-gray-500">Si no aceptas, no se carga nada a tu tarjeta.</p>`;
+            }
+
+            // Pedidos recientes
+            const mo = document.getElementById('my-orders');
+            mo.innerHTML = S.myOrders.length ? S.myOrders.map(o => `
+                <div class="flex justify-between items-center p-2 bg-cyber-dark rounded-lg border border-cyber-border/50">
+                    <div><span class="text-white">Pedido #${Number(o.id)}</span><span class="text-gray-500 block text-[10px]">${esc(fdate(o.created_at))}</span></div>
+                    <span class="text-cyber-neonPink font-bold">${money(o.total)}</span>${orderBadge(o.status)}</div>`).join('')
+                : '<p class="text-gray-500">Aún no tienes pedidos.</p>';
+        }
+
+        async function placeOrder() {
+            const entries = cartEntries();
+            if (!entries.length) return showToast('Tu carrito está vacío', 'error');
+            const total = cartTotal(entries);
+            if (!confirm(`¿Aceptar el pedido por ${money(total)} y cargarlo a tu tarjeta NFC?`)) return;
+            const items = entries.map(e => ({ product_id: e.p.id, quantity: e.qty }));
+            setBusy('place-order-btn', true, 'Cargando...');
+            const { error } = await sb.rpc('place_order', { p_items: items });
+            setBusy('place-order-btn', false);
+            if (error) return showToast(errMsg(error), 'error');
+            S.cart = {};
+            showToast('Pedido cargado a tu tarjeta. Acércala a la máquina para retirarlo.', 'success');
+            await loadProducts(); await loadMyOrders();
+        }
+
+        async function cancelMyOrder(id) {
+            if (!confirm('¿Cancelar este pedido? No se te cobrará nada.')) return;
+            const { error } = await sb.rpc('cancel_my_order', { p_order_id: id });
+            if (error) return showToast(errMsg(error), 'error');
+            showToast('Pedido cancelado', 'success');
+            await loadMyOrders();
+        }
+
+        async function loadAdminOrders() {
+            const { data: o, error } = await sb.from('orders').select('*').order('created_at', { ascending: false }).limit(50);
+            if (error) return showToast('Error al cargar pedidos: ' + errMsg(error), 'error');
+            const ids = (o || []).map(x => x.id);
+            let items = [];
+            if (ids.length) { const r = await sb.from('order_items').select('*').in('order_id', ids); items = r.data || []; }
+            document.getElementById('admin-orders-table').innerHTML = (o || []).map(x => `
+                <tr class="hover:bg-cyber-dark/40">
+                    <td class="p-3 text-gray-400">${esc(fdate(x.created_at))}</td>
+                    <td class="p-3 text-white">${esc(pname(x.user_id))}</td>
+                    <td class="p-3">${items.filter(i => i.order_id === x.id).map(i => `${Number(i.quantity)}× ${esc(prodName(i.product_id, S.adminProducts))} (M${Number(i.slot)})`).join('<br>')}</td>
+                    <td class="p-3 text-cyber-neonPink font-bold">${money(x.total)}</td><td class="p-3">${orderBadge(x.status)}</td></tr>`).join('')
+                || '<tr><td colspan="5" class="p-4 text-gray-500">Aún no hay pedidos.</td></tr>';
         }
     </script>
 </body>
