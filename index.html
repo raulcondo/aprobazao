@@ -66,6 +66,53 @@
         .inp { width: 100%; background: #0b0f19; border: 1px solid #2a3652; border-radius: 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.8rem; color: #fff; }
         .inp:focus { outline: none; border-color: #00f0ff; }
         .cfg-banner { display: none; }
+
+        /* ---- Fondo: liso en Inicio, con textura de gatitos neón en las demás secciones ---- */
+        body::before {
+            content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            opacity: 0; transition: opacity .6s ease;
+            background-image:
+                radial-gradient(ellipse at 15% 10%, rgba(0,240,255,.10), transparent 45%),
+                radial-gradient(ellipse at 85% 90%, rgba(255,42,133,.10), transparent 45%),
+                url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 160 160%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E %3Cg transform=%22translate(14,14)%22 stroke=%22%2300f0ff%22 stroke-width=%221.6%22 opacity=%22.55%22%3E%3Cpath d=%22M2 24 L2 6 L12 14 L28 14 L38 6 L38 24 C38 34 30 38 20 38 C10 38 2 34 2 24Z%22/%3E%3Ccircle cx=%2213%22 cy=%2224%22 r=%221.8%22 fill=%22%2300f0ff%22/%3E%3Ccircle cx=%2227%22 cy=%2224%22 r=%221.8%22 fill=%22%2300f0ff%22/%3E%3Cpath d=%22M18 29 L22 29 L20 31Z%22 fill=%22%2300f0ff%22/%3E%3C/g%3E %3Cg transform=%22translate(98,18)%22 fill=%22%23ff2a85%22 opacity=%22.5%22%3E%3Cellipse cx=%2215%22 cy=%2222%22 rx=%229%22 ry=%227%22/%3E%3Ccircle cx=%224%22 cy=%2211%22 r=%223.4%22/%3E%3Ccircle cx=%2211%22 cy=%225%22 r=%223.4%22/%3E%3Ccircle cx=%2219%22 cy=%225%22 r=%223.4%22/%3E%3Ccircle cx=%2226%22 cy=%2211%22 r=%223.4%22/%3E%3C/g%3E %3Cg transform=%22translate(22,100)%22 stroke=%22%239d4edd%22 stroke-width=%221.6%22 opacity=%22.6%22%3E%3Crect x=%226%22 y=%226%22 width=%2226%22 height=%2226%22 rx=%224%22/%3E%3Crect x=%2213%22 y=%2213%22 width=%2212%22 height=%2212%22 rx=%222%22/%3E%3Cpath d=%22M12 6V0M19 6V0M26 6V0M12 32V38M19 32V38M26 32V38M6 12H0M6 19H0M6 26H0M32 12H38M32 19H38M32 26H38%22/%3E%3C/g%3E %3Cg transform=%22translate(104,96) rotate(12 18 18)%22 stroke=%22%23ff2a85%22 stroke-width=%221.6%22 opacity=%22.5%22%3E%3Cpath d=%22M2 24 L2 6 L12 14 L28 14 L38 6 L38 24 C38 34 30 38 20 38 C10 38 2 34 2 24Z%22/%3E%3Cpath d=%22M12 24 L16 24 M24 24 L28 24%22 /%3E%3Cpath d=%22M16 30 Q20 33 24 30%22/%3E%3C/g%3E %3Cg stroke=%22%2300f0ff%22 stroke-width=%221.4%22 opacity=%22.5%22%3E%3Cpath d=%22M80 78v8M76 82h8%22/%3E%3Cpath d=%22M150 64v6M147 67h6%22/%3E%3Cpath d=%22M62 150v6M59 153h6%22/%3E%3C/g%3E %3C/svg%3E");
+            background-size: auto, auto, 160px 160px;
+        }
+        body.has-texture::before { opacity: 1; }
+
+        /* ---- NekoBot ---- */
+        .nb-cat { overflow: visible; }
+        .nb-head { transform-origin: 120px 165px; transition: transform .3s ease; }
+        .nb-cat.active .nb-head { transform: rotate(-6deg); }
+        .nb-body { transform-origin: 120px 284px; animation: nbBreathe 3.2s ease-in-out infinite; }
+        .nb-tail { transform-origin: 176px 268px; animation: nbTail 2.4s ease-in-out infinite; }
+        .nb-cat.active .nb-tail { animation-duration: .5s; }
+        .nb-eye { transform-box: fill-box; transform-origin: center; animation: nbBlink 5s infinite; }
+        .nb-ear-l { transform-origin: 84px 70px; animation: nbEarL 7s ease-in-out infinite; }
+        .nb-ear-r { transform-origin: 156px 70px; animation: nbEarR 9s ease-in-out infinite; }
+        .nb-antenna { transform-origin: 120px 50px; animation: nbAnt 2.8s ease-in-out infinite; }
+        .nb-whisk-l { transform-origin: 58px 114px; animation: nbWhiskL 4s ease-in-out infinite; }
+        .nb-whisk-r { transform-origin: 182px 114px; animation: nbWhiskR 4s ease-in-out infinite; }
+        .nb-pupil { transition: transform .08s linear; }
+        .nb-smile { transition: opacity .15s; }
+        .nb-mouth-open { opacity: 0; transition: opacity .15s; }
+        .nb-tongue { transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); transition: transform .28s cubic-bezier(.34,1.56,.64,1); }
+        .nb-tongue-wig { transform-box: fill-box; transform-origin: 50% 0; }
+        .nb-cat.tongue .nb-smile { opacity: 0; }
+        .nb-cat.tongue .nb-mouth-open { opacity: 1; }
+        .nb-cat.tongue .nb-tongue { transform: scaleY(1); }
+        .nb-cat.active .nb-tongue-wig { animation: nbWig .3s ease-in-out infinite alternate; }
+        .nb-mouth-hit { cursor: pointer; }
+        #cat-speech::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 9px; height: 9px; background: #151c2e; border-right: 1px solid #00f0ff; border-bottom: 1px solid #00f0ff; transform: translateX(-50%) rotate(45deg); }
+        @keyframes nbBreathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.012,1.025); } }
+        @keyframes nbTail { 0%,100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
+        @keyframes nbBlink { 0%,93%,100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
+        @keyframes nbEarL { 0%,88%,100% { transform: rotate(0); } 92% { transform: rotate(-9deg); } 96% { transform: rotate(2deg); } }
+        @keyframes nbEarR { 0%,80%,100% { transform: rotate(0); } 85% { transform: rotate(9deg); } 90% { transform: rotate(-2deg); } }
+        @keyframes nbAnt { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+        @keyframes nbWhiskL { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-3deg); } }
+        @keyframes nbWhiskR { 0%,100% { transform: rotate(0); } 50% { transform: rotate(3deg); } }
+        @keyframes nbWig { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+        @media (prefers-reduced-motion: reduce) { .nb-body,.nb-tail,.nb-eye,.nb-ear-l,.nb-ear-r,.nb-antenna,.nb-whisk-l,.nb-whisk-r { animation: none !important; } }
     </style>
 </head>
 <body class="selection:bg-cyber-neonCyan selection:text-cyber-dark min-h-screen flex flex-col justify-between">
@@ -88,7 +135,7 @@
                 </div>
                 <div>
                     <span class="font-orbitron font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-neonCyan via-white to-cyber-neonPink">APROBAZAO</span>
-                    <span class="block text-[9px] font-mono text-gray-400 tracking-widest uppercase -mt-1">IoT NFC Vending Platform</span>
+                    <span class="block text-[9px] font-mono text-gray-400 tracking-widest uppercase -mt-1">IoT NFC Vending Platform · Versión 1</span>
                 </div>
             </a>
 
@@ -156,27 +203,68 @@
                         </div>
                     </div>
 
-                    <div class="relative flex justify-center items-center">
-                        <div class="w-72 h-72 sm:w-80 sm:h-80 rounded-full border border-cyber-neonCyan/30 relative flex items-center justify-center">
+                    <div class="relative flex justify-center items-center min-h-[30rem] sm:min-h-[36rem]">
+                        <div class="w-72 h-72 sm:w-[24rem] sm:h-[24rem] rounded-full border border-cyber-neonCyan/30 relative flex items-center justify-center">
                             <div class="absolute inset-2 border border-dashed border-cyber-neonPink/30 rounded-full"></div>
                         </div>
                         <div class="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group" onclick="triggerCatMeow()">
                             <div class="relative animate-float">
-                                <div id="cat-speech" class="absolute -top-10 left-1/2 -translate-x-1/2 bg-cyber-card border border-cyber-neonCyan text-cyber-neonCyan text-xs px-3 py-1 rounded-full font-mono shadow-xl whitespace-nowrap">⚡ ¡Miau! Bienvenido a APROBAZAO</div>
-                                <svg class="w-52 h-52 sm:w-64 sm:h-64 drop-shadow-[0_0_25px_rgba(0,240,255,0.4)]" viewBox="0 0 200 200" fill="none">
-                                    <polygon points="45,60 25,10 75,40" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
-                                    <polygon points="155,60 175,10 125,40" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
-                                    <rect x="40" y="40" width="120" height="100" rx="35" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
-                                    <rect x="52" y="62" width="96" height="52" rx="15" fill="#0b0f19" stroke="#00f0ff" stroke-width="2"/>
-                                    <circle cx="76" cy="88" r="10" fill="#00f0ff"/>
-                                    <circle cx="124" cy="88" r="10" fill="#00f0ff"/>
-                                    <polygon points="100,98 95,104 105,104" fill="#ff2a85"/>
-                                    <path d="M30 80 L50 83 M25 95 L50 93" stroke="#00f0ff" stroke-width="2"/>
-                                    <path d="M170 80 L150 83 M175 95 L150 93" stroke="#00f0ff" stroke-width="2"/>
-                                    <line x1="100" y1="40" x2="100" y2="18" stroke="#00f0ff" stroke-width="4"/>
-                                    <circle cx="100" cy="14" r="6" fill="#ff2a85"/>
+                                <div id="cat-speech" class="absolute -top-14 left-1/2 -translate-x-1/2 z-10 bg-cyber-card border border-cyber-neonCyan text-cyber-neonCyan text-xs px-4 py-2 rounded-2xl font-mono shadow-xl w-max max-w-[17rem] text-center">⚡ ¡Miau! Bienvenido a APROBAZAO</div>
+                                <svg id="nb-cat" class="nb-cat w-60 sm:w-72 lg:w-80 h-auto drop-shadow-[0_0_28px_rgba(0,240,255,0.45)]" viewBox="0 0 240 300" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <!-- cola -->
+                                    <g class="nb-tail">
+                                        <path d="M176 268 C226 276 242 224 214 196" stroke="#ff2a85" stroke-width="12"/>
+                                        <circle cx="214" cy="196" r="6.5" fill="#00f0ff" stroke="none"/>
+                                    </g>
+                                    <!-- cuerpo sentado -->
+                                    <g class="nb-body">
+                                        <ellipse cx="64" cy="252" rx="30" ry="32" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
+                                        <ellipse cx="176" cy="252" rx="30" ry="32" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
+                                        <path d="M74 160 C52 200 54 262 84 280 L156 280 C186 262 188 200 166 160 Z" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
+                                        <rect x="94" y="192" width="52" height="58" rx="16" fill="#0b0f19" stroke="#00f0ff" stroke-width="2"/>
+                                        <path d="M110 214 Q118 221 110 228 M116 208 Q130 221 116 234 M122 202 Q142 221 122 240" stroke="#ff2a85" stroke-width="2.5"/>
+                                        <rect x="88" y="248" width="24" height="36" rx="12" fill="#151c2e" stroke="#00f0ff" stroke-width="3.5"/>
+                                        <rect x="128" y="248" width="24" height="36" rx="12" fill="#151c2e" stroke="#00f0ff" stroke-width="3.5"/>
+                                        <path d="M96 274 V281 M100 275 V282 M104 274 V281 M136 274 V281 M140 275 V282 M144 274 V281" stroke="#ff2a85" stroke-width="1.8"/>
+                                        <path d="M78 168 Q120 192 162 168" stroke="#ff2a85" stroke-width="7"/>
+                                        <circle cx="120" cy="184" r="7" fill="#ffb703" stroke="#0b0f19" stroke-width="2"/>
+                                        <path d="M117 184 H123" stroke="#0b0f19" stroke-width="2"/>
+                                    </g>
+                                    <!-- cabeza -->
+                                    <g class="nb-head">
+                                        <g class="nb-ear-l">
+                                            <path d="M56 88 C50 54 52 30 64 26 C74 24 100 40 112 54 Z" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
+                                            <path d="M62 76 C60 54 61 41 66 38 C72 37 88 47 97 57 Z" fill="#ff2a85" fill-opacity=".28" stroke="none"/>
+                                        </g>
+                                        <g class="nb-ear-r">
+                                            <path d="M184 88 C190 54 188 30 176 26 C166 24 140 40 128 54 Z" fill="#151c2e" stroke="#ff2a85" stroke-width="4"/>
+                                            <path d="M178 76 C180 54 179 41 174 38 C168 37 152 47 143 57 Z" fill="#ff2a85" fill-opacity=".28" stroke="none"/>
+                                        </g>
+                                        <g class="nb-antenna">
+                                            <line x1="120" y1="52" x2="120" y2="27" stroke="#00f0ff" stroke-width="4"/>
+                                            <circle cx="120" cy="21" r="6.5" fill="#ff2a85" stroke="none"/>
+                                        </g>
+                                        <rect x="50" y="50" width="140" height="115" rx="42" fill="#151c2e" stroke="#00f0ff" stroke-width="4"/>
+                                        <rect x="64" y="74" width="112" height="64" rx="18" fill="#0b0f19" stroke="#00f0ff" stroke-width="2"/>
+                                        <g class="nb-eye"><circle cx="92" cy="100" r="12" fill="#00f0ff" stroke="none"/><g class="nb-pupil"><circle cx="92" cy="100" r="5.5" fill="#0b0f19" stroke="none"/><circle cx="95" cy="96" r="2.2" fill="#fff" stroke="none"/></g></g>
+                                        <g class="nb-eye"><circle cx="148" cy="100" r="12" fill="#00f0ff" stroke="none"/><g class="nb-pupil"><circle cx="148" cy="100" r="5.5" fill="#0b0f19" stroke="none"/><circle cx="151" cy="96" r="2.2" fill="#fff" stroke="none"/></g></g>
+                                        <ellipse cx="75" cy="121" rx="5" ry="3" fill="#ff2a85" fill-opacity=".45" stroke="none"/>
+                                        <ellipse cx="165" cy="121" rx="5" ry="3" fill="#ff2a85" fill-opacity=".45" stroke="none"/>
+                                        <path d="M114 109 Q120 105 126 109 Q123 116 120 117 Q117 116 114 109Z" fill="#ff2a85" stroke="#ff2a85" stroke-width="1.5"/>
+                                        <g class="nb-smile"><path d="M120 117 V121 M120 121 Q112 129 104 122 M120 121 Q128 129 136 122" stroke="#00f0ff" stroke-width="2.5"/></g>
+                                        <path class="nb-mouth-open" d="M107 121 Q120 142 133 121 Z" fill="#3a0a22" stroke="#ff2a85" stroke-width="2"/>
+                                        <g class="nb-tongue"><g class="nb-tongue-wig">
+                                            <path d="M112 127 Q112 149 120 150 Q128 149 128 127 Z" fill="#ff5fa2" stroke="#ff2a85" stroke-width="2"/>
+                                            <path d="M120 131 V144" stroke="#ff2a85" stroke-width="1.6"/>
+                                        </g></g>
+                                        <g class="nb-whisk-l"><path d="M58 106 L18 98 M58 114 L16 116 M58 122 L20 134" stroke="#00f0ff" stroke-width="2"/></g>
+                                        <g class="nb-whisk-r"><path d="M182 106 L222 98 M182 114 L224 116 M182 122 L220 134" stroke="#00f0ff" stroke-width="2"/></g>
+                                        <rect class="nb-mouth-hit" x="92" y="108" width="56" height="46" fill="transparent" stroke="none"/>
+                                    </g>
                                 </svg>
                                 <p class="text-center text-xs text-gray-400 mt-2 font-mono group-hover:text-cyber-neonCyan">[ Haz clic sobre NekoBot 🐾 ]</p>
+                                <p class="text-center text-[10px] text-gray-500 font-mono">pasa el mouse por su boca 👅</p>
+                                <button type="button" id="cat-sound-btn" onclick="event.stopPropagation(); toggleCatSound()" class="mx-auto mt-2 flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono bg-cyber-card border border-cyber-neonPink/50 text-cyber-neonPink hover:bg-cyber-neonPink/10 transition-colors"><i class="fa-solid fa-volume-high"></i><span>Sonido: ON</span></button>
                             </div>
                         </div>
                     </div>
@@ -475,10 +563,18 @@
         </div>
     </div>
 
-    <footer class="cyber-glass border-t border-cyber-border/50 py-6 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
-            <div class="flex items-center gap-2"><i class="fa-solid fa-cat text-cyber-neonPink"></i><span>APROBAZAO - Plataforma IoT de Gestión de Componentes NFC</span></div>
-            <div class="font-mono">&copy; 2026 Facultad de Ingeniería</div>
+    <footer class="cyber-glass border-t border-cyber-border/50 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 items-center gap-8 text-xs text-gray-400">
+            <div class="flex items-center justify-center md:justify-start gap-2"><i class="fa-solid fa-cat text-cyber-neonPink"></i><span>APROBAZAO - Plataforma IoT de Gestión de Componentes NFC</span></div>
+            <div class="text-center space-y-2">
+                <div class="font-orbitron text-[10px] tracking-widest uppercase text-cyber-neonCyan"><i class="fa-solid fa-paw text-cyber-neonPink mr-1"></i> Equipo de desarrollo</div>
+                <ul class="space-y-1 font-mono text-gray-300">
+                    <li>Bernal Espinoza Andrea</li>
+                    <li>Condo Choque Raul Fernando</li>
+                    <li>Labrada Fernandez Diana Rosa</li>
+                </ul>
+            </div>
+            <div class="font-mono text-center md:text-right">&copy; 2026 Facultad Nacional de Ingeniería<span class="block text-[10px] text-cyber-neonPink mt-1">Versión 1</span></div>
         </div>
     </footer>
 
@@ -582,16 +678,96 @@
             p.className = 'paw-print'; p.style.left = x + 'px'; p.style.top = y + 'px';
             document.body.appendChild(p); setTimeout(() => p.remove(), 800);
         }
-        function triggerCatMeow() {
-            const m = ['🐾 ¡Miau! Sistema APROBAZAO listo', '⚡ Tu saldo, tu tarjeta, tus componentes', '💳 Recarga y acércate a la máquina', '🤖 ¿Necesitas sensores para tu proyecto?'];
-            document.getElementById('cat-speech').textContent = m[Math.floor(Math.random() * m.length)];
+        /* ---------------- NekoBot: sonido, frases y lengua ---------------- */
+        let catAudio = null, catSoundOn = true, catTypeTimer = null, catActiveTimer = null, catLastPhrase = -1;
+        const CAT_PHRASES = [
+            '🐾 ¡Miau! Sistema APROBAZAO listo',
+            '⚡ Tu saldo, tu tarjeta, tus componentes',
+            '💳 Recarga y acércate a la máquina',
+            '🤖 ¿Necesitas sensores para tu proyecto?',
+            '😝 ¡Bleeeh! Me pillaste sacando la lengua',
+            '🎓 ¡Con NFC todo se aprueba, APROBAZAO!',
+            '🔌 Arduino, ESP32, motores... ¡todo aquí!'
+        ];
+        function getCatAudio() {
+            if (!catAudio) { const A = window.AudioContext || window.webkitAudioContext; if (A) catAudio = new A(); }
+            if (catAudio && catAudio.state === 'suspended') catAudio.resume();
+            return catAudio;
         }
+        function playMeow() {
+            if (!catSoundOn) return; const ctx = getCatAudio(); if (!ctx) return;
+            const t = ctx.currentTime, d = 0.8;
+            const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(420, t);
+            osc.frequency.exponentialRampToValueAtTime(900, t + 0.22);
+            osc.frequency.exponentialRampToValueAtTime(540, t + d);
+            const lfo = ctx.createOscillator(); lfo.frequency.value = 7;
+            const lg = ctx.createGain(); lg.gain.value = 14; lfo.connect(lg); lg.connect(osc.frequency);
+            const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3.5;
+            f.frequency.setValueAtTime(700, t); f.frequency.linearRampToValueAtTime(1900, t + 0.26); f.frequency.linearRampToValueAtTime(900, t + d);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1.1, t + 0.07); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+            osc.connect(f); f.connect(g); g.connect(ctx.destination);
+            osc.start(t); lfo.start(t); osc.stop(t + d + 0.05); lfo.stop(t + d + 0.05);
+        }
+        function playBlip(i) {
+            if (!catSoundOn || !catAudio) return;
+            const t = catAudio.currentTime;
+            const o = catAudio.createOscillator(); o.type = 'square';
+            o.frequency.value = 520 + (i % 6) * 55;
+            const g = catAudio.createGain();
+            g.gain.setValueAtTime(0.035, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+            o.connect(g); g.connect(catAudio.destination); o.start(t); o.stop(t + 0.06);
+        }
+        function catSay(text) {
+            const el = document.getElementById('cat-speech'); if (!el) return;
+            clearInterval(catTypeTimer);
+            const chars = Array.from(text); let i = 0; el.textContent = '';
+            catTypeTimer = setInterval(() => {
+                i++; el.textContent = chars.slice(0, i).join('');
+                if (chars[i - 1] !== ' ') playBlip(i);
+                if (i >= chars.length) clearInterval(catTypeTimer);
+            }, 38);
+        }
+        function toggleCatSound() {
+            catSoundOn = !catSoundOn;
+            const b = document.getElementById('cat-sound-btn');
+            b.innerHTML = catSoundOn ? '<i class="fa-solid fa-volume-high"></i><span>Sonido: ON</span>' : '<i class="fa-solid fa-volume-xmark"></i><span>Sonido: OFF</span>';
+            if (catSoundOn) { getCatAudio(); playMeow(); }
+        }
+        function triggerCatMeow() {
+            const cat = document.getElementById('nb-cat');
+            let i; do { i = Math.floor(Math.random() * CAT_PHRASES.length); } while (i === catLastPhrase);
+            catLastPhrase = i;
+            getCatAudio(); playMeow();
+            cat.classList.add('active', 'tongue');
+            catSay(CAT_PHRASES[i]);
+            clearTimeout(catActiveTimer);
+            catActiveTimer = setTimeout(() => cat.classList.remove('active', 'tongue'), 1800);
+        }
+        (function initNekoBot() {
+            const cat = document.getElementById('nb-cat'); if (!cat) return;
+            const hit = cat.querySelector('.nb-mouth-hit');
+            hit.addEventListener('mouseenter', () => cat.classList.add('tongue'));
+            hit.addEventListener('mouseleave', () => { if (!cat.classList.contains('active')) cat.classList.remove('tongue'); });
+            // los ojos siguen al cursor
+            const pupils = cat.querySelectorAll('.nb-pupil');
+            document.addEventListener('mousemove', e => {
+                const r = cat.getBoundingClientRect();
+                const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height * 0.35);
+                const k = Math.min(1, Math.hypot(dx, dy) / 250);
+                const a = Math.atan2(dy, dx);
+                const x = Math.cos(a) * 4.5 * k, y = Math.sin(a) * 3.5 * k;
+                pupils.forEach(p => p.style.transform = `translate(${x}px, ${y}px)`);
+            });
+        })();
 
         /* ---------------- Navegación ---------------- */
         function switchTab(id) {
             if (id === 'tab-admin' && !isAdmin()) { showToast('Esta sección es solo para la administradora', 'error'); return; }
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            document.body.classList.toggle('has-texture', id !== 'tab-inicio');
             document.querySelectorAll('.nav-btn').forEach(b => {
                 const on = b.dataset.tab === id;
                 b.classList.toggle('bg-cyber-neonCyan', on);
